@@ -118,6 +118,7 @@ void main() async {
     _mainLog.info("Setup hive and isar");
     _migrateDownloadLocations();
     _migrateSortOptions();
+    _migrateShowTabs();
     await _migrateThemeModeLocale();
     _mainLog.info("Completed applicable migrations");
     await _trustAndroidUserCerts();
@@ -475,6 +476,26 @@ void _migrateSortOptions() {
     changed = true;
   }
 
+  if (changed) {
+    FinampSettingsHelper.overwriteFinampSettings(finampSettings);
+  }
+}
+
+/// Ensures that all TabContentType values are in showTabs map
+void _migrateShowTabs() {
+  final finampSettings = FinampSettingsHelper.finampSettings;
+  
+  var changed = false;
+  
+  // Check if all TabContentType values are in showTabs
+  for (var type in TabContentType.values) {
+    if (!finampSettings.showTabs.containsKey(type)) {
+      // If not, add it with default value true
+      finampSettings.showTabs[type] = true;
+      changed = true;
+    }
+  }
+  
   if (changed) {
     FinampSettingsHelper.overwriteFinampSettings(finampSettings);
   }

@@ -233,6 +233,7 @@ class DefaultSettings {
     TabContentType.artists: TileAdditionalInfoType.adaptive,
     TabContentType.playlists: TileAdditionalInfoType.adaptive,
     TabContentType.genres: TileAdditionalInfoType.adaptive,
+    TabContentType.folders: TileAdditionalInfoType.adaptive,
   };
   static const rpcEnabled = false;
   static const rpcIcon = DiscordRpcIcon.transparent;
@@ -1039,7 +1040,9 @@ enum TabContentType {
   @HiveField(3)
   genres(BaseItemDtoType.genre),
   @HiveField(4)
-  tracks(BaseItemDtoType.track);
+  tracks(BaseItemDtoType.track),
+  @HiveField(5)
+  folders(BaseItemDtoType.folder);
 
   const TabContentType(this.itemType);
 
@@ -1066,6 +1069,8 @@ enum TabContentType {
         return "Genres";
       case TabContentType.playlists:
         return "Playlists";
+      case TabContentType.folders:
+        return "Folders";
     }
   }
 
@@ -1081,6 +1086,8 @@ enum TabContentType {
         return AppLocalizations.of(context)!.genres;
       case TabContentType.playlists:
         return AppLocalizations.of(context)!.playlists;
+      case TabContentType.folders:
+        return AppLocalizations.of(context)!.folders;
     }
   }
 
@@ -1096,6 +1103,8 @@ enum TabContentType {
         return TabContentType.genres;
       case "Playlist":
         return TabContentType.playlists;
+      case "Folder":
+        return TabContentType.folders;
       default:
         throw const FormatException("Unsupported itemType");
     }

@@ -3306,6 +3306,7 @@ enum SortBy {
           SortBy.random,
         ];
       case TabContentType.genres:
+      case TabContentType.folders:
         options = [SortBy.sortName, SortBy.dateCreated, SortBy.random];
     }
     if (includeDefaultOrder) {

@@ -22,6 +22,7 @@ import '../first_page_progress_indicator.dart';
 import '../global_snackbar.dart';
 import '../new_page_progress_indicator.dart';
 import 'alphabet_item_list.dart';
+import 'folder_view.dart';
 import 'item_collection_wrapper.dart';
 
 // this is used to allow refreshing the music screen from other parts of the app, e.g. after deleting items from the server
@@ -87,6 +88,11 @@ class _MusicScreenTabViewState extends ConsumerState<MusicScreenTabView>
 
   // This function just lets us easily set stuff to the getItems call we want.
   Future<void> _getPage(int pageKey) async {
+    // If it's the folders tab, don't do anything
+    if (widget.tabContentType == TabContentType.folders) {
+      return;
+    }
+    
     // The jump-to-letter widget and main view scrolling may generate duplicate page
     // requests.  Only fetch page once in these cases.
     if (pageKey <= _requestedPageKey) {
@@ -162,6 +168,11 @@ class _MusicScreenTabViewState extends ConsumerState<MusicScreenTabView>
   }
 
   Future<void> _getPageOffline() async {
+    // If it's the folders tab, don't do anything
+    if (widget.tabContentType == TabContentType.folders) {
+      return;
+    }
+    
     var settings = FinampSettingsHelper.finampSettings;
     int localRefreshCount = refreshCount;
     var artistInfoForType = (settings.defaultArtistType == ArtistType.albumArtist)
@@ -232,9 +243,13 @@ class _MusicScreenTabViewState extends ConsumerState<MusicScreenTabView>
 
   @override
   void initState() {
-    _pagingController.addPageRequestListener((pageKey) {
-      _getPage(pageKey);
-    });
+    // Only initialize paging controller if it's not the folders tab
+    if (widget.tabContentType != TabContentType.folders) {
+      _pagingController.addPageRequestListener((pageKey) {
+        _getPage(pageKey);
+      });
+    }
+    
     controller = AutoScrollController(
       suggestedRowHeight: 72,
       viewportBoundaryGetter: () => Rect.fromLTRB(0, 0, 0, MediaQuery.paddingOf(context).bottom),
@@ -363,6 +378,11 @@ class _MusicScreenTabViewState extends ConsumerState<MusicScreenTabView>
   }
 
   void _refresh() {
+    // If it's the folders tab, don't do anything
+    if (widget.tabContentType == TabContentType.folders) {
+      return;
+    }
+    
     refreshCount++;
     _requestedPageKey = -1;
     // This makes refreshing actually work in error cases
@@ -399,6 +419,23 @@ class _MusicScreenTabViewState extends ConsumerState<MusicScreenTabView>
   Widget build(BuildContext context) {
     super.build(context);
     widget.refresh?.callback = _refresh;
+
+    // If it's the folders tab, use the folder view
+    if (widget.tabContentType == TabContentType.folders) {
+      return RefreshIndicator(
+        onRefresh: () async {
+          // For folder view, we can't easily refresh the state here
+          // We'll just return immediately
+        },
+        child: FolderView(
+          view: widget.view,
+          genreFilter: widget.genreFilter,
+          sortByOverride: widget.sortByOverride,
+          sortOrderOverride: widget.sortOrderOverride,
+          isFavoriteOverride: widget.isFavoriteOverride,
+        ),
+      );
+    }
 
     final emptyListIndicator = Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 32.0),
