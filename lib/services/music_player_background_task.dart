@@ -1381,49 +1381,56 @@ class MusicPlayerBackgroundTask extends BaseAudioHandler with SeekHandler, Queue
         return Future.error("Offline mode enabled but downloaded track not found.");
       } else {
         final trackUri = await _trackUri(queueItem.item);
+        final shouldTranscode = queueItem.item.extras!["shouldTranscode"] as bool;
         
         // Apply streaming cache if enabled
         if (FinampSettingsHelper.finampSettings.streamingCacheEnabled) {
           try {
             final cacheFile = await _getCacheFileForUrl(trackUri);
-            final audioSource = LockCachingAudioSource(
-              trackUri,
-              cacheFile: cacheFile,
-              tag: queueItem,
-            );
+            // For transcoded streams, we use HlsAudioSource if needed
+            final audioSource = shouldTranscode 
+              ? HlsAudioSource(trackUri, tag: queueItem)
+              : LockCachingAudioSource(
+                  trackUri,
+                  cacheFile: cacheFile,
+                  tag: queueItem,
+                );
 
-            // Record cache entry in database after successful creation
-            final uriString = trackUri.toString();
-            final urlHash = uriString.hashCode.toRadixString(36);
-            
-            // Try to record in database, but don't fail playback if it fails
-            try {
-              final fileSize = await cacheFile.length();
-              final fileSizeMB = (fileSize / (1024 * 1024)).ceil();
+            // For direct streaming, record cache entry in database
+            if (!shouldTranscode) {
+              final uriString = trackUri.toString();
+              final urlHash = uriString.hashCode.toRadixString(36);
               
-              await StreamingCacheService.instance.recordCachedUrl(
-                urlHash: urlHash,
-                fileUrl: uriString,
-                fileSizeMB: fileSizeMB,
-              );
-            } catch (e) {
-              _audioServiceBackgroundTaskLogger.warning("Failed to record cache entry in database: $e");
-              // Don't rethrow - we still want playback to work even if db recording fails
+              // Try to record in database, but don't fail playback if it fails
+              try {
+                final fileSize = await cacheFile.length();
+                final fileSizeMB = (fileSize / (1024 * 1024)).ceil();
+                
+                await StreamingCacheService.instance.recordCachedUrl(
+                  urlHash: urlHash,
+                  fileUrl: uriString,
+                  fileSizeMB: fileSizeMB,
+                );
+              } catch (e) {
+                _audioServiceBackgroundTaskLogger.warning("Failed to record cache entry in database: $e");
+              }
             }
 
             return audioSource;
           } catch (e) {
             _audioServiceBackgroundTaskLogger.warning("Failed to create cached audio source: $e, falling back to direct streaming");
-            return AudioSource.uri(trackUri, tag: queueItem);
+            return shouldTranscode 
+              ? HlsAudioSource(trackUri, tag: queueItem) 
+              : AudioSource.uri(trackUri, tag: queueItem);
           }
         }
         
-        return AudioSource.uri(trackUri, tag: queueItem);
-        // if (queueItem.item.extras!["shouldTranscode"] == true) {
-        //   return HlsAudioSource(trackUri, tag: queueItem);
-        // } else {
-        //   return AudioSource.uri(trackUri, tag: queueItem);
-        // }
+        // Without streaming cache
+        if (shouldTranscode) {
+          return HlsAudioSource(trackUri, tag: queueItem);
+        } else {
+          return AudioSource.uri(trackUri, tag: queueItem);
+        }
       }
     } else {
       // We have to deserialise this because Dart is stupid and can't handle

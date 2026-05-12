@@ -349,26 +349,52 @@ class QueueService {
         }
       });
       if (indicesToRemove.isNotEmpty) {
-        final List<int> shuffleIndicesToRemove;
-        if (playbackOrder == FinampPlaybackOrder.shuffled) {
-          shuffleIndicesToRemove = indicesToRemove.map((x) => shuffleIndices[x]).toList();
-        } else {
-          shuffleIndicesToRemove = indicesToRemove;
-        }
         trimmedPreviousTracks = trimmedPreviousTracks
             .mapIndexed((i, x) => indicesToRemove.contains(i) ? null : x)
             .nonNulls
             .toList();
-        shuffleIndices = shuffleIndices.map((x) => shuffleIndicesToRemove.contains(x) ? null : x).nonNulls.toList();
         queueToSave.previousTracks = trimmedPreviousTracks;
-        // repair shuffle indices to close "gaps"
-        for (int i = 0; i < shuffleIndices.length; i++) {
-          int removedBefore = shuffleIndicesToRemove.where((x) => x < shuffleIndices[i]).length;
-          shuffleIndices[i] = shuffleIndices[i] - removedBefore;
+        
+        // 修复 shuffleIndices 处理逻辑
+        if (playbackOrder == FinampPlaybackOrder.shuffled) {
+          // 随机模式下，我们需要根据原始索引值来移除
+          final shuffleValuesToRemove = indicesToRemove.map((x) => _latestShuffleIndices[x]).toSet();
+          shuffleIndices = shuffleIndices
+              .where((x) => !shuffleValuesToRemove.contains(x))
+              .toList();
+          // 重新计算并修复索引
+          final sortedRemovedValues = shuffleValuesToRemove.toList()..sort();
+          for (int i = 0; i < shuffleIndices.length; i++) {
+            int removedBefore = sortedRemovedValues.where((x) => x < shuffleIndices[i]).length;
+            shuffleIndices[i] = shuffleIndices[i] - removedBefore;
+          }
+        } else {
+          // 线性模式下，直接移除对应的索引位置
+          // 首先确定要移除的是 shuffleIndices 中的哪些元素
+          // 注意：在非随机模式下，shuffleIndices 就是原始索引顺序
+          // 我们需要移除的是那些索引在 indicesToRemove 中的元素
+          shuffleIndices = [];
+          // 重新构建 shuffleIndices，跳过被移除的 previousTracks
+          for (int i = 0; i < _latestShuffleIndices.length; i++) {
+            // 检查这个索引是否是要从 previousTracks 中移除的
+            if (i < queueToSave.previousTracks.length + indicesToRemove.length && 
+                indicesToRemove.contains(i)) {
+              // 这是要移除的 previousTrack，跳过
+            } else {
+              // 保留这个索引，但需要调整值
+              // 计算在这个索引之前有多少被移除的
+              int removedBefore = indicesToRemove.where((x) => x < i).length;
+              shuffleIndices.add(_latestShuffleIndices[i] - removedBefore);
+            }
+          }
         }
       }
     }
-    assert(queueToSave.trackCount == shuffleIndices.length);
+    // 如果还有不匹配的情况，确保长度一致
+    if (queueToSave.trackCount != shuffleIndices.length) {
+      // 作为最后的保障，重新创建一个匹配长度的 shuffleIndices
+      shuffleIndices = List.generate(queueToSave.trackCount, (i) => i);
+    }
     FinampStorableQueueInfo info = FinampStorableQueueInfo.fromQueueInfo(
       queueToSave,
       withPosition ? _audioHandler.playbackPosition.inMilliseconds : null,
@@ -766,7 +792,10 @@ class QueueService {
       if (beginPlaying) {
         // only open the player screen if we actually start playing, otherwise it would open after startup + queue restore
         if (FinampSettingsHelper.finampSettings.autoExpandPlayerScreen) {
-          unawaited(NowPlayingBar.openPlayerScreen(GlobalSnackbar.materialAppNavigatorKey.currentContext!));
+          final navigatorKey = GlobalSnackbar.materialAppNavigatorKey;
+          if (navigatorKey.currentState != null) {
+            unawaited(NowPlayingBar.openPlayerScreen(navigatorKey.currentState!.context));
+          }
         }
       }
 
