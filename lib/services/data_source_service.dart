@@ -98,7 +98,8 @@ class DataSourceService {
                     // archived queues are not overwritten and can always be restored again
                     bool archivalNeeded = event == SourceChangeType.toOffline;
                     queueService.reloadQueue(archiveQueue: archivalNeeded);
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    // Use global key instead of ScaffoldMessenger.of(context) to avoid context issues
+                    GlobalSnackbar.materialAppScaffoldKey.currentState?.hideCurrentSnackBar();
                   },
                 ),
                 isConfirmation: false,
@@ -123,7 +124,8 @@ class DataSourceService {
                   label: AppLocalizations.of(context)!.autoReloadPromptReloadButton,
                   onPressed: () {
                     queueService.reloadQueue(archiveQueue: false);
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    // Use global key instead of ScaffoldMessenger.of(context) to avoid context issues
+                    GlobalSnackbar.materialAppScaffoldKey.currentState?.hideCurrentSnackBar();
                   },
                 ),
                 isConfirmation: false,

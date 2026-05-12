@@ -52,7 +52,11 @@ class GlobalSnackbar {
           timer.cancel();
           _timer = null;
           for (var queuedFunc in _queue) {
-            queuedFunc();
+            try {
+              queuedFunc();
+            } catch (e) {
+              _logger.warning("Error executing queued snackbar function: $e");
+            }
           }
           _queue.clear();
         }
@@ -74,12 +78,20 @@ class GlobalSnackbar {
   /// Show a snackbar to the user using the local context
   static void showPrebuilt(SnackBar snackbar) => _enqueue(() => _showPrebuilt(snackbar));
   static void _showPrebuilt(SnackBar snackbar) {
+    if (materialAppScaffoldKey.currentState == null || materialAppScaffoldKey.currentContext == null) {
+      _logger.warning("Cannot show prebuilt snackbar: ScaffoldMessenger not available");
+      return;
+    }
     materialAppScaffoldKey.currentState!.showSnackBar(snackbar);
   }
 
   /// Show a snackbar to the user using the global context
   static void show(SnackBar Function(BuildContext scaffold) snackbar) => _enqueue(() => _show(snackbar));
   static void _show(SnackBar Function(BuildContext scaffold) snackbar) {
+    if (materialAppScaffoldKey.currentState == null || materialAppScaffoldKey.currentContext == null) {
+      _logger.warning("Cannot show snackbar: ScaffoldMessenger not available");
+      return;
+    }
     materialAppScaffoldKey.currentState!.showSnackBar(snackbar(materialAppScaffoldKey.currentContext!));
   }
 
@@ -94,6 +106,10 @@ class GlobalSnackbar {
     bool isConfirmation,
     SnackBarAction Function(BuildContext scaffold)? action,
   ) {
+    if (materialAppScaffoldKey.currentState == null || materialAppScaffoldKey.currentContext == null) {
+      _logger.warning("Cannot show message: ScaffoldMessenger not available");
+      return;
+    }
     BuildContext context = materialAppScaffoldKey.currentContext!;
     var text = message(context);
     _logger.info("Displaying message: $text");
@@ -111,6 +127,10 @@ class GlobalSnackbar {
   /// Show an unlocalized error message to the user
   static void error(dynamic event) => _enqueue(() => _error(event));
   static void _error(dynamic event) {
+    if (materialAppScaffoldKey.currentState == null || materialAppScaffoldKey.currentContext == null) {
+      _logger.warning("Cannot show error: ScaffoldMessenger not available");
+      return;
+    }
     // Suppress common transient network error "Failed host lookup"
     bool suppressError = false;
     if (event is SocketException || event is ClientException) {
@@ -216,6 +236,10 @@ class GlobalSnackbar {
     bool isConfirmation,
     SnackBarAction Function(BuildContext scaffold)? action,
   ) {
+    if (materialAppScaffoldKey.currentContext == null) {
+      _logger.warning("Cannot show popup: context not available");
+      return;
+    }
     BuildContext context = materialAppScaffoldKey.currentContext!;
     var text = message(context);
     _logger.info("Displaying message: $text");
