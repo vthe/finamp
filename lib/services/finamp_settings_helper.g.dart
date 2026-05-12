@@ -1286,6 +1286,22 @@ extension FinampSetters on FinampSettingsHelper {
     ).put("FinampSettings", finampSettingsTemp);
   }
 
+  static void setStreamingCacheEnabled(bool newStreamingCacheEnabled) {
+    FinampSettings finampSettingsTemp = FinampSettingsHelper.finampSettings;
+    finampSettingsTemp.streamingCacheEnabled = newStreamingCacheEnabled;
+    Hive.box<FinampSettings>(
+      "FinampSettings",
+    ).put("FinampSettings", finampSettingsTemp);
+  }
+
+  static void setMaxStreamingCacheSizeMB(int newMaxStreamingCacheSizeMB) {
+    FinampSettings finampSettingsTemp = FinampSettingsHelper.finampSettings;
+    finampSettingsTemp.maxStreamingCacheSizeMB = newMaxStreamingCacheSizeMB;
+    Hive.box<FinampSettings>(
+      "FinampSettings",
+    ).put("FinampSettings", finampSettingsTemp);
+  }
+
   static void setBufferDuration(Duration newBufferDuration) {
     FinampSettings finampSettingsTemp = FinampSettingsHelper.finampSettings;
     finampSettingsTemp.bufferDuration = newBufferDuration;
@@ -1729,6 +1745,10 @@ extension FinampSettingsProviderSelectors on StreamProvider<FinampSettings> {
       finampSettingsProvider.select((value) => value.requireValue.amoledTheme);
   ProviderListenable<bool> get useAndroidGainEffect => finampSettingsProvider
       .select((value) => value.requireValue.useAndroidGainEffect);
+  ProviderListenable<bool> get streamingCacheEnabled => finampSettingsProvider
+      .select((value) => value.requireValue.streamingCacheEnabled);
+  ProviderListenable<int> get maxStreamingCacheSizeMB => finampSettingsProvider
+      .select((value) => value.requireValue.maxStreamingCacheSizeMB);
   ProviderListenable<DownloadProfile> get downloadTranscodingProfile =>
       finampSettingsProvider.select(
         (value) => value.requireValue.downloadTranscodingProfile,

@@ -16,6 +16,7 @@ import 'package:finamp/models/locale_adapter.dart';
 import 'package:finamp/screens/accessibility_settings_screen.dart';
 import 'package:finamp/screens/album_settings_screen.dart';
 import 'package:finamp/screens/artist_settings_screen.dart';
+import 'package:finamp/screens/cache_settings_screen.dart';
 import 'package:finamp/screens/downloads_settings_screen.dart';
 import 'package:finamp/screens/genre_settings_screen.dart';
 import 'package:finamp/screens/interaction_settings_screen.dart';
@@ -44,6 +45,7 @@ import 'package:finamp/services/offline_listen_helper.dart';
 import 'package:finamp/services/playback_history_service.dart';
 import 'package:finamp/services/playon_service.dart';
 import 'package:finamp/services/queue_service.dart';
+import 'package:finamp/services/streaming_cache_service.dart';
 import 'package:finamp/services/theme_provider.dart';
 import 'package:finamp/services/ui_overlay_setter_observer.dart';
 import 'package:finamp/services/widget_bindings_observer_provider.dart';
@@ -298,13 +300,16 @@ Future<void> setupHive() async {
     compactFile.deleteSync();
   }
   final isar = await Isar.open(
-    [DownloadItemSchema, IsarTaskDataSchema, FinampUserSchema, DownloadedLyricsSchema],
+    [DownloadItemSchema, IsarTaskDataSchema, FinampUserSchema, DownloadedLyricsSchema, StreamingCacheEntrySchema],
     directory: dir.path,
     name: isarDatabaseName,
     compactOnLaunch: CompactCondition(minBytes: 5 * 1024 * 1024),
     relaxedDurability: true,
   );
   GetIt.instance.registerSingleton(isar);
+  
+  // Initialize streaming cache service
+  await StreamingCacheService.init(isar);
 }
 
 Future<void> _setupProviders() async {
@@ -693,6 +698,7 @@ class FinampApp extends ConsumerWidget {
         TranscodingSettingsScreen.routeName: (context) => const TranscodingSettingsScreen(),
         DownloadsLocationScreen.routeName: (context) => const DownloadsLocationScreen(),
         DownloadsSettingsScreen.routeName: (context) => const DownloadsSettingsScreen(),
+        CacheSettingsScreen.routeName: (context) => const CacheSettingsScreen(),
         AddDownloadLocationScreen.routeName: (context) => const AddDownloadLocationScreen(),
         PlaybackReportingSettingsScreen.routeName: (context) => const PlaybackReportingSettingsScreen(),
         AudioServiceSettingsScreen.routeName: (context) => const AudioServiceSettingsScreen(),

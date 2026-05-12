@@ -175,6 +175,15 @@ class FinampSettingsHelper {
     Hive.box<FinampSettings>("FinampSettings").put("FinampSettings", finampSettingsTemp);
   }
 
+  static void resetCacheSettings() {
+    FinampSettings finampSettingsTemp = finampSettings;
+
+    finampSettingsTemp.streamingCacheEnabled = DefaultSettings.streamingCacheEnabled;
+    finampSettingsTemp.maxStreamingCacheSizeMB = DefaultSettings.maxStreamingCacheSizeMB;
+
+    Hive.box<FinampSettings>("FinampSettings").put("FinampSettings", finampSettingsTemp);
+  }
+
   static void resetAudioServiceSettings() {
     FinampSetters.setAndroidStopForegroundOnPause(DefaultSettings.androidStopForegroundOnPause);
     FinampSetters.setTrackShuffleItemCount(DefaultSettings.trackShuffleItemCount);
@@ -258,6 +267,7 @@ class FinampSettingsHelper {
   static void resetAllSettings() {
     resetTranscodingSettings();
     resetDownloadSettings();
+    resetCacheSettings();
     resetAudioServiceSettings();
     resetNormalizationSettings();
     resetInteractionsSettings();

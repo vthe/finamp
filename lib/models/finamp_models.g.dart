@@ -454,6 +454,10 @@ class FinampSettingsAdapter extends TypeAdapter<FinampSettings> {
             ? PreviousTracksPersistenceMode.persistent
             : fields[145] as PreviousTracksPersistenceMode,
         useAndroidGainEffect: fields[147] == null ? true : fields[147] as bool,
+        streamingCacheEnabled: fields[148] == null ? true : fields[148] as bool,
+        maxStreamingCacheSizeMB: fields[149] == null
+            ? 500
+            : (fields[149] as num).toInt(),
       )
       ..disableGesture = fields[19] == null ? false : fields[19] as bool
       ..showFastScroller = fields[25] == null ? true : fields[25] as bool
@@ -472,7 +476,7 @@ class FinampSettingsAdapter extends TypeAdapter<FinampSettings> {
   @override
   void write(BinaryWriter writer, FinampSettings obj) {
     writer
-      ..writeByte(141)
+      ..writeByte(143)
       ..writeByte(0)
       ..write(obj.isOffline)
       ..writeByte(1)
@@ -754,7 +758,11 @@ class FinampSettingsAdapter extends TypeAdapter<FinampSettings> {
       ..writeByte(146)
       ..write(obj.amoledTheme)
       ..writeByte(147)
-      ..write(obj.useAndroidGainEffect);
+      ..write(obj.useAndroidGainEffect)
+      ..writeByte(148)
+      ..write(obj.streamingCacheEnabled)
+      ..writeByte(149)
+      ..write(obj.maxStreamingCacheSizeMB);
   }
 
   @override
@@ -8445,6 +8453,1152 @@ extension DownloadedLyricsQueryProperty
   QueryBuilder<DownloadedLyrics, String?, QQueryOperations> jsonItemProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'jsonItem');
+    });
+  }
+}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+extension GetStreamingCacheEntryCollection on Isar {
+  IsarCollection<StreamingCacheEntry> get streamingCacheEntrys =>
+      this.collection();
+}
+
+const StreamingCacheEntrySchema = CollectionSchema(
+  name: r'StreamingCacheEntry',
+  id: 6969073562963001584,
+  properties: {
+    r'createdAt': PropertySchema(
+      id: 0,
+      name: r'createdAt',
+      type: IsarType.dateTime,
+    ),
+    r'fileSizeMB': PropertySchema(
+      id: 1,
+      name: r'fileSizeMB',
+      type: IsarType.long,
+    ),
+    r'fileUrl': PropertySchema(id: 2, name: r'fileUrl', type: IsarType.string),
+    r'lastAccessedAt': PropertySchema(
+      id: 3,
+      name: r'lastAccessedAt',
+      type: IsarType.dateTime,
+    ),
+    r'lastModifiedAt': PropertySchema(
+      id: 4,
+      name: r'lastModifiedAt',
+      type: IsarType.dateTime,
+    ),
+    r'urlHash': PropertySchema(id: 5, name: r'urlHash', type: IsarType.string),
+  },
+
+  estimateSize: _streamingCacheEntryEstimateSize,
+  serialize: _streamingCacheEntrySerialize,
+  deserialize: _streamingCacheEntryDeserialize,
+  deserializeProp: _streamingCacheEntryDeserializeProp,
+  idName: r'isarId',
+  indexes: {
+    r'urlHash': IndexSchema(
+      id: 3626799727396018272,
+      name: r'urlHash',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'urlHash',
+          type: IndexType.hash,
+          caseSensitive: true,
+        ),
+      ],
+    ),
+  },
+  links: {},
+  embeddedSchemas: {},
+
+  getId: _streamingCacheEntryGetId,
+  getLinks: _streamingCacheEntryGetLinks,
+  attach: _streamingCacheEntryAttach,
+  version: '3.1.0+1',
+);
+
+int _streamingCacheEntryEstimateSize(
+  StreamingCacheEntry object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  bytesCount += 3 + object.fileUrl.length * 3;
+  bytesCount += 3 + object.urlHash.length * 3;
+  return bytesCount;
+}
+
+void _streamingCacheEntrySerialize(
+  StreamingCacheEntry object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeDateTime(offsets[0], object.createdAt);
+  writer.writeLong(offsets[1], object.fileSizeMB);
+  writer.writeString(offsets[2], object.fileUrl);
+  writer.writeDateTime(offsets[3], object.lastAccessedAt);
+  writer.writeDateTime(offsets[4], object.lastModifiedAt);
+  writer.writeString(offsets[5], object.urlHash);
+}
+
+StreamingCacheEntry _streamingCacheEntryDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = StreamingCacheEntry(
+    createdAt: reader.readDateTime(offsets[0]),
+    fileSizeMB: reader.readLong(offsets[1]),
+    fileUrl: reader.readString(offsets[2]),
+    lastAccessedAt: reader.readDateTime(offsets[3]),
+    lastModifiedAt: reader.readDateTime(offsets[4]),
+    urlHash: reader.readString(offsets[5]),
+  );
+  return object;
+}
+
+P _streamingCacheEntryDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readDateTime(offset)) as P;
+    case 1:
+      return (reader.readLong(offset)) as P;
+    case 2:
+      return (reader.readString(offset)) as P;
+    case 3:
+      return (reader.readDateTime(offset)) as P;
+    case 4:
+      return (reader.readDateTime(offset)) as P;
+    case 5:
+      return (reader.readString(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+Id _streamingCacheEntryGetId(StreamingCacheEntry object) {
+  return object.isarId;
+}
+
+List<IsarLinkBase<dynamic>> _streamingCacheEntryGetLinks(
+  StreamingCacheEntry object,
+) {
+  return [];
+}
+
+void _streamingCacheEntryAttach(
+  IsarCollection<dynamic> col,
+  Id id,
+  StreamingCacheEntry object,
+) {}
+
+extension StreamingCacheEntryQueryWhereSort
+    on QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QWhere> {
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterWhere>
+  anyIsarId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+}
+
+extension StreamingCacheEntryQueryWhere
+    on QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QWhereClause> {
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterWhereClause>
+  isarIdEqualTo(Id isarId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.between(lower: isarId, upper: isarId),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterWhereClause>
+  isarIdNotEqualTo(Id isarId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: isarId, includeUpper: false),
+            )
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: isarId, includeLower: false),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: isarId, includeLower: false),
+            )
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: isarId, includeUpper: false),
+            );
+      }
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterWhereClause>
+  isarIdGreaterThan(Id isarId, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.greaterThan(lower: isarId, includeLower: include),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterWhereClause>
+  isarIdLessThan(Id isarId, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.lessThan(upper: isarId, includeUpper: include),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterWhereClause>
+  isarIdBetween(
+    Id lowerIsarId,
+    Id upperIsarId, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.between(
+          lower: lowerIsarId,
+          includeLower: includeLower,
+          upper: upperIsarId,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterWhereClause>
+  urlHashEqualTo(String urlHash) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(indexName: r'urlHash', value: [urlHash]),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterWhereClause>
+  urlHashNotEqualTo(String urlHash) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'urlHash',
+                lower: [],
+                upper: [urlHash],
+                includeUpper: false,
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'urlHash',
+                lower: [urlHash],
+                includeLower: false,
+                upper: [],
+              ),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'urlHash',
+                lower: [urlHash],
+                includeLower: false,
+                upper: [],
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'urlHash',
+                lower: [],
+                upper: [urlHash],
+                includeUpper: false,
+              ),
+            );
+      }
+    });
+  }
+}
+
+extension StreamingCacheEntryQueryFilter
+    on
+        QueryBuilder<
+          StreamingCacheEntry,
+          StreamingCacheEntry,
+          QFilterCondition
+        > {
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  createdAtEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  createdAtGreaterThan(DateTime value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  createdAtLessThan(DateTime value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  createdAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileSizeMBEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'fileSizeMB', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileSizeMBGreaterThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'fileSizeMB',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileSizeMBLessThan(int value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'fileSizeMB',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileSizeMBBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'fileSizeMB',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileUrlEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'fileUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileUrlGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'fileUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileUrlLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'fileUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileUrlBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'fileUrl',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileUrlStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'fileUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileUrlEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'fileUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileUrlContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'fileUrl',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileUrlMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'fileUrl',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileUrlIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'fileUrl', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  fileUrlIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'fileUrl', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  isarIdEqualTo(Id value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'isarId', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  isarIdGreaterThan(Id value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'isarId',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  isarIdLessThan(Id value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'isarId',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  isarIdBetween(
+    Id lower,
+    Id upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'isarId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  lastAccessedAtEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'lastAccessedAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  lastAccessedAtGreaterThan(DateTime value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'lastAccessedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  lastAccessedAtLessThan(DateTime value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'lastAccessedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  lastAccessedAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'lastAccessedAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  lastModifiedAtEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'lastModifiedAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  lastModifiedAtGreaterThan(DateTime value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'lastModifiedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  lastModifiedAtLessThan(DateTime value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'lastModifiedAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  lastModifiedAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'lastModifiedAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  urlHashEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'urlHash',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  urlHashGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'urlHash',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  urlHashLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'urlHash',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  urlHashBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'urlHash',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  urlHashStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'urlHash',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  urlHashEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'urlHash',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  urlHashContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'urlHash',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  urlHashMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'urlHash',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  urlHashIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'urlHash', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterFilterCondition>
+  urlHashIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'urlHash', value: ''),
+      );
+    });
+  }
+}
+
+extension StreamingCacheEntryQueryObject
+    on
+        QueryBuilder<
+          StreamingCacheEntry,
+          StreamingCacheEntry,
+          QFilterCondition
+        > {}
+
+extension StreamingCacheEntryQueryLinks
+    on
+        QueryBuilder<
+          StreamingCacheEntry,
+          StreamingCacheEntry,
+          QFilterCondition
+        > {}
+
+extension StreamingCacheEntryQuerySortBy
+    on QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QSortBy> {
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByFileSizeMB() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileSizeMB', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByFileSizeMBDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileSizeMB', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByFileUrl() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileUrl', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByFileUrlDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileUrl', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByLastAccessedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastAccessedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByLastAccessedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastAccessedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByLastModifiedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModifiedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByLastModifiedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModifiedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByUrlHash() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'urlHash', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  sortByUrlHashDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'urlHash', Sort.desc);
+    });
+  }
+}
+
+extension StreamingCacheEntryQuerySortThenBy
+    on QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QSortThenBy> {
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByFileSizeMB() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileSizeMB', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByFileSizeMBDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileSizeMB', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByFileUrl() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileUrl', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByFileUrlDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'fileUrl', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByIsarId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isarId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByIsarIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByLastAccessedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastAccessedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByLastAccessedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastAccessedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByLastModifiedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModifiedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByLastModifiedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastModifiedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByUrlHash() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'urlHash', Sort.asc);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QAfterSortBy>
+  thenByUrlHashDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'urlHash', Sort.desc);
+    });
+  }
+}
+
+extension StreamingCacheEntryQueryWhereDistinct
+    on QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QDistinct> {
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QDistinct>
+  distinctByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdAt');
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QDistinct>
+  distinctByFileSizeMB() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'fileSizeMB');
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QDistinct>
+  distinctByFileUrl({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'fileUrl', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QDistinct>
+  distinctByLastAccessedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastAccessedAt');
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QDistinct>
+  distinctByLastModifiedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastModifiedAt');
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QDistinct>
+  distinctByUrlHash({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'urlHash', caseSensitive: caseSensitive);
+    });
+  }
+}
+
+extension StreamingCacheEntryQueryProperty
+    on QueryBuilder<StreamingCacheEntry, StreamingCacheEntry, QQueryProperty> {
+  QueryBuilder<StreamingCacheEntry, int, QQueryOperations> isarIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isarId');
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, DateTime, QQueryOperations>
+  createdAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, int, QQueryOperations>
+  fileSizeMBProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'fileSizeMB');
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, String, QQueryOperations>
+  fileUrlProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'fileUrl');
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, DateTime, QQueryOperations>
+  lastAccessedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastAccessedAt');
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, DateTime, QQueryOperations>
+  lastModifiedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastModifiedAt');
+    });
+  }
+
+  QueryBuilder<StreamingCacheEntry, String, QQueryOperations>
+  urlHashProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'urlHash');
     });
   }
 }

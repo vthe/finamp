@@ -2,6 +2,7 @@ import 'package:finamp/l10n/app_localizations.dart';
 import 'package:finamp/menus/quick_connect_authorization_menu.dart';
 import 'package:finamp/menus/server_sharing_menu.dart';
 import 'package:finamp/screens/accessibility_settings_screen.dart';
+import 'package:finamp/screens/cache_settings_screen.dart';
 import 'package:finamp/screens/interaction_settings_screen.dart';
 import 'package:finamp/screens/network_settings_screen.dart';
 import 'package:finamp/components/finamp_icon.dart';
@@ -138,6 +139,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             leading: const Icon(Icons.download),
             title: Text(AppLocalizations.of(context)!.downloadSettings),
             onTap: () => Navigator.of(context).pushNamed(DownloadsSettingsScreen.routeName),
+          ),
+          ListTile(
+            leading: const Icon(TablerIcons.database),
+            title: Text(AppLocalizations.of(context)!.streamingCache),
+            onTap: () => Navigator.of(context).pushNamed(CacheSettingsScreen.routeName),
           ),
           ListTile(
             leading: const Icon(Icons.wifi),

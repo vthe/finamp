@@ -3310,5 +3310,61 @@
   "androidGainDisabled": "Switching to gain effect fallback due to initialization error.",
   "@androidGainDisabled": {
     "description": "Message presented when the android gain effect fallback is enabled after an error occurs."
+  },
+  "streamingCache": "Streaming Cache",
+  "@streamingCache": {
+    "description": "Title for the streaming cache settings screen"
+  },
+  "streamingCacheTitle": "Enable Streaming Cache",
+  "@streamingCacheTitle": {
+    "description": "Title for the streaming cache toggle setting"
+  },
+  "streamingCacheSubtitle": "Save streamed music to cache for faster replay and reduced bandwidth usage",
+  "@streamingCacheSubtitle": {
+    "description": "Subtitle describing what streaming cache does"
+  },
+  "streamingCacheStatistics": "Cache Statistics",
+  "@streamingCacheStatistics": {
+    "description": "Section title for cache statistics display"
+  },
+  "streamingCacheSize": "Cache Size",
+  "@streamingCacheSize": {
+    "description": "Label for current cache size display"
+  },
+  "streamingCacheEntries": "Cached Tracks",
+  "@streamingCacheEntries": {
+    "description": "Label for number of cached tracks"
+  },
+  "streamingCacheMaxSize": "Maximum Cache Size",
+  "@streamingCacheMaxSize": {
+    "description": "Title for the cache size limit slider"
+  },
+  "streamingCacheActions": "Cache Actions",
+  "@streamingCacheActions": {
+    "description": "Section title for cache management actions"
+  },
+  "clearStreamingCache": "Clear All Cache",
+  "@clearStreamingCache": {
+    "description": "Button label to clear all streaming cache"
+  },
+  "clearStreamingCacheDescription": "Remove all cached files and database records. This will free up storage space but cached tracks will need to be re-downloaded.",
+  "@clearStreamingCacheDescription": {
+    "description": "Description of what clearing cache does"
+  },
+  "clearStreamingCacheConfirm": "Clear All Cache?",
+  "@clearStreamingCacheConfirm": {
+    "description": "Confirmation dialog title for clearing cache"
+  },
+  "clearStreamingCacheConfirmDescription": "This will delete all cached files and their database records. This action cannot be undone.",
+  "@clearStreamingCacheConfirmDescription": {
+    "description": "Confirmation dialog message for clearing cache"
+  },
+  "streamingCacheClearedSuccess": "Cache cleared successfully",
+  "@streamingCacheClearedSuccess": {
+    "description": "Success message after clearing cache"
+  },
+  "current": "Current",
+  "@current": {
+    "description": "Label for current value"
   }
 }

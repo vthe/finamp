@@ -252,6 +252,8 @@ class DefaultSettings {
   static const forceAudioOffloadingOnAndroid = false;
   static const previousTracksPersistenceMode = PreviousTracksPersistenceMode.persistent;
   static const useAndroidGainEffect = true;
+  static const streamingCacheEnabled = true;
+  static const maxStreamingCacheSizeMB = 500;
 }
 
 @HiveType(typeId: 28)
@@ -397,6 +399,8 @@ class FinampSettings {
     this.forceAudioOffloadingOnAndroid = DefaultSettings.forceAudioOffloadingOnAndroid,
     this.previousTracksPersistenceMode = DefaultSettings.previousTracksPersistenceMode,
     this.useAndroidGainEffect = DefaultSettings.useAndroidGainEffect,
+    this.streamingCacheEnabled = DefaultSettings.streamingCacheEnabled,
+    this.maxStreamingCacheSizeMB = DefaultSettings.maxStreamingCacheSizeMB,
   });
 
   @HiveField(0, defaultValue: DefaultSettings.isOffline)
@@ -857,6 +861,12 @@ class FinampSettings {
 
   @HiveField(147, defaultValue: DefaultSettings.useAndroidGainEffect)
   bool useAndroidGainEffect;
+
+  @HiveField(148, defaultValue: DefaultSettings.streamingCacheEnabled)
+  bool streamingCacheEnabled;
+
+  @HiveField(149, defaultValue: DefaultSettings.maxStreamingCacheSizeMB)
+  int maxStreamingCacheSizeMB;
 
   static Future<FinampSettings> create() async {
     final downloadLocation = await DownloadLocation.create(
@@ -2547,6 +2557,46 @@ class DownloadedLyrics {
       : LyricDto.fromJson(jsonDecode(jsonItem!) as Map<String, dynamic>));
   @ignore
   LyricDto? _lyricDtoCached;
+}
+
+/// Metadata for streaming cache entries. Stores information about cached URLs
+/// for efficient cache management, LRU cleanup, and UI display.
+@collection
+class StreamingCacheEntry {
+  StreamingCacheEntry({
+    required this.urlHash,
+    required this.fileUrl,
+    required this.fileSizeMB,
+    required this.createdAt,
+    required this.lastAccessedAt,
+    required this.lastModifiedAt,
+  });
+
+  /// Auto-incrementing primary key
+  final Id isarId = Isar.autoIncrement;
+
+  /// Hash of the original URL for fast lookups. Used as cache file name.
+  @Index()
+  final String urlHash;
+
+  /// Original URL that was cached
+  final String fileUrl;
+
+  /// Size of the cache file in MB (for quota calculations)
+  final int fileSizeMB;
+
+  /// When this cache entry was created
+  final DateTime createdAt;
+
+  /// Last time this cache was accessed (for LRU cleanup)
+  late DateTime lastAccessedAt;
+
+  /// Last time this cache file was modified (when file was written/updated)
+  late DateTime lastModifiedAt;
+
+  /// Cache file name based on URL hash
+  @ignore
+  String get cacheFileName => '$urlHash.cache';
 }
 
 @HiveType(typeId: 67)

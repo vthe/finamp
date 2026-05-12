@@ -16,6 +16,7 @@ import 'package:finamp/services/jellyfin_api_helper.dart';
 import 'package:finamp/services/playback_history_service.dart';
 import 'package:finamp/services/queue_service.dart';
 import 'package:finamp/services/radio_service_helper.dart' as RadioServiceHelper;
+import 'package:finamp/services/streaming_cache_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,6 +25,7 @@ import 'package:get_it/get_it.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:logging/logging.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'android_auto_helper.dart';
@@ -529,6 +531,11 @@ class MusicPlayerBackgroundTask extends BaseAudioHandler with SeekHandler, Queue
     });
 
     fadeState = BehaviorSubject.seeded(FadeState(fadeVolume: 1.0));
+    
+    // Clean up old streaming cache files on startup
+    _cleanupStreamingCache().catchError((e) {
+      _audioServiceBackgroundTaskLogger.warning("Error cleaning up streaming cache on startup: $e");
+    });
   }
 
   SleepTimer? get sleepTimer => _timer.value;
@@ -1374,6 +1381,43 @@ class MusicPlayerBackgroundTask extends BaseAudioHandler with SeekHandler, Queue
         return Future.error("Offline mode enabled but downloaded track not found.");
       } else {
         final trackUri = await _trackUri(queueItem.item);
+        
+        // Apply streaming cache if enabled
+        if (FinampSettingsHelper.finampSettings.streamingCacheEnabled) {
+          try {
+            final cacheFile = await _getCacheFileForUrl(trackUri);
+            final audioSource = LockCachingAudioSource(
+              trackUri,
+              cacheFile: cacheFile,
+              tag: queueItem,
+            );
+
+            // Record cache entry in database after successful creation
+            final uriString = trackUri.toString();
+            final urlHash = uriString.hashCode.toRadixString(36);
+            
+            // Try to record in database, but don't fail playback if it fails
+            try {
+              final fileSize = await cacheFile.length();
+              final fileSizeMB = (fileSize / (1024 * 1024)).ceil();
+              
+              await StreamingCacheService.instance.recordCachedUrl(
+                urlHash: urlHash,
+                fileUrl: uriString,
+                fileSizeMB: fileSizeMB,
+              );
+            } catch (e) {
+              _audioServiceBackgroundTaskLogger.warning("Failed to record cache entry in database: $e");
+              // Don't rethrow - we still want playback to work even if db recording fails
+            }
+
+            return audioSource;
+          } catch (e) {
+            _audioServiceBackgroundTaskLogger.warning("Failed to create cached audio source: $e, falling back to direct streaming");
+            return AudioSource.uri(trackUri, tag: queueItem);
+          }
+        }
+        
         return AudioSource.uri(trackUri, tag: queueItem);
         // if (queueItem.item.extras!["shouldTranscode"] == true) {
         //   return HlsAudioSource(trackUri, tag: queueItem);
@@ -1449,6 +1493,97 @@ class MusicPlayerBackgroundTask extends BaseAudioHandler with SeekHandler, Queue
       pathSegments: builtPath,
       queryParameters: queryParameters,
     );
+  }
+
+  /// Get the cache file path for a streaming URL.
+  /// Uses a hash of the URL to generate a unique cache file name.
+  Future<File> _getCacheFileForUrl(Uri uri) async {
+    // Get the cache directory
+    final cacheDir = await getTemporaryDirectory();
+    final streamingCacheDir = Directory('${cacheDir.path}/finamp_streaming_cache');
+    
+    // Create directory if it doesn't exist
+    if (!await streamingCacheDir.exists()) {
+      await streamingCacheDir.create(recursive: true);
+    }
+    
+    // Generate a unique cache file name using URI hashCode
+    // This ensures the same URL always maps to the same cache file
+    final uriString = uri.toString();
+    final cacheFileName = '${uriString.hashCode.toRadixString(36)}.cache';
+    
+    return File('${streamingCacheDir.path}/$cacheFileName');
+  }
+
+  /// Clean up old streaming cache files if cache size exceeds the limit.
+  /// This method should be called periodically or when the app starts.
+  Future<void> _cleanupStreamingCache() async {
+    try {
+      final cacheDir = await getTemporaryDirectory();
+      final streamingCacheDir = Directory('${cacheDir.path}/finamp_streaming_cache');
+      
+      if (!await streamingCacheDir.exists()) {
+        return;
+      }
+      
+      final maxCacheSizeBytes = FinampSettingsHelper.finampSettings.maxStreamingCacheSizeMB * 1024 * 1024;
+      
+      // Get all cache files
+      final files = streamingCacheDir.listSync().whereType<File>().toList();
+      
+      if (files.isEmpty) {
+        return;
+      }
+      
+      // Calculate total cache size
+      int totalSize = 0;
+      for (final file in files) {
+        totalSize += await file.length();
+      }
+      
+      // If cache is within limits, no cleanup needed
+      if (totalSize <= maxCacheSizeBytes) {
+        return;
+      }
+      
+      _audioServiceBackgroundTaskLogger.info(
+        'Streaming cache size (${(totalSize / (1024 * 1024)).toStringAsFixed(2)} MB) exceeds limit (${FinampSettingsHelper.finampSettings.maxStreamingCacheSizeMB} MB), cleaning up old files',
+      );
+      
+      // Sort files by modification time (oldest first)
+      files.sort((a, b) => a.statSync().modified.compareTo(b.statSync().modified));
+      
+      // Delete oldest files until under the limit
+      int currentSize = totalSize;
+      for (final file in files) {
+        if (currentSize <= maxCacheSizeBytes * 0.8) {
+          // Keep it at 80% of max to avoid frequent cleanups
+          break;
+        }
+        
+        try {
+          final fileSize = await file.length();
+          final fileName = file.path.split('/').last; // Get file name with extension
+          final urlHash = fileName.replaceAll('.cache', ''); // Remove .cache extension
+          
+          await file.delete();
+          currentSize -= fileSize;
+          
+          // Also remove from database
+          try {
+            await StreamingCacheService.instance.deleteCacheEntry(urlHash);
+          } catch (e) {
+            _audioServiceBackgroundTaskLogger.warning('Failed to delete cache entry from database for $urlHash: $e');
+          }
+          
+          _audioServiceBackgroundTaskLogger.fine('Deleted cache file: ${file.path}');
+        } catch (e) {
+          _audioServiceBackgroundTaskLogger.warning('Failed to delete cache file: $e');
+        }
+      }
+    } catch (e) {
+      _audioServiceBackgroundTaskLogger.warning('Error during streaming cache cleanup: $e');
+    }
   }
 
   @override
