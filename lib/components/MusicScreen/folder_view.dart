@@ -17,6 +17,7 @@ import '../../menus/components/playbackActions/playback_actions.dart';
 import '../AlbumScreen/track_list_tile.dart';
 import 'item_collection_wrapper.dart';
 import 'music_screen_tab_view.dart';
+import '../padded_custom_scrollview.dart';
 
 class FolderView extends ConsumerStatefulWidget {
   const FolderView({
@@ -468,7 +469,7 @@ class _FolderViewState extends ConsumerState<FolderView> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0).copyWith(bottom: 100.0),
       itemCount: allItems.length,
       itemBuilder: (context, index) {
         final item = allItems[index];
@@ -501,7 +502,7 @@ class _FolderViewState extends ConsumerState<FolderView> {
     }
 
     return GridView.builder(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(8.0).copyWith(bottom: 100.0),
       gridDelegate: FinampSettingsHelper.finampSettings.useFixedSizeGridTiles
           ? SliverGridDelegateWithFixedSizeTiles(
               gridTileSize: FinampSettingsHelper.finampSettings.fixedGridTileSize.toDouble(),
