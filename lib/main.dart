@@ -323,14 +323,6 @@ Future<void> _setupProviders() async {
 
   DataSourceService.create();
   AutoOffline.startWatching();
-
-  unawaited(
-    Stream<void>.periodic(Duration(seconds: 1)).forEach((_) {
-      if (!SchedulerBinding.instance.framesEnabled) {
-        (providerScopeKey.currentContext as InheritedElement?)?.build();
-      }
-    }),
-  );
 }
 
 Future<void> _setupOSIntegration() async {

@@ -68,7 +68,7 @@ class _MusicScreenTabViewState extends ConsumerState<MusicScreenTabView>
 
   final PagingController<int, BaseItemDto> _pagingController = PagingController(
     firstPageKey: 0,
-    invisibleItemsThreshold: 70,
+    invisibleItemsThreshold: 40,
   );
 
   Future<List<BaseItemDto>>? offlineSortedItems;

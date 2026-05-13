@@ -59,6 +59,9 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
 
   TabController? _tabController;
 
+  // Moved from build() to avoid recreating on every rebuild
+  Timer? _searchDebounce;
+
   final _audioServiceHelper = GetIt.instance<AudioServiceHelper>();
   final _finampUserHelper = GetIt.instance<FinampUserHelper>();
   final _jellyfinApiHelper = GetIt.instance<JellyfinApiHelper>();
@@ -101,6 +104,7 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _tabController?.dispose();
     super.dispose();
   }
@@ -200,9 +204,11 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
       // This widget should rebuild with an enabled tab on the next frame, just return empty for now.
       return SizedBox.shrink();
     }
-    refreshMap[sortedTabs.elementAt(_tabController!.index)] = MusicRefreshCallback();
-
-    Timer? debounce;
+    // Ensure refresh callback exists without recreating on every build
+    final currentTabType = sortedTabs.elementAt(_tabController!.index);
+    if (!refreshMap.containsKey(currentTabType)) {
+      refreshMap[currentTabType] = MusicRefreshCallback();
+    }
 
     return PopScope(
       canPop: !isSearching,
@@ -224,8 +230,8 @@ class _MusicScreenState extends ConsumerState<MusicScreen> with TickerProviderSt
                   keyboardType: TextInputType.text,
                   textInputAction: TextInputAction.search,
                   onChanged: (value) {
-                    if (debounce?.isActive ?? false) debounce!.cancel();
-                    debounce = Timer(const Duration(milliseconds: 400), () {
+                    _searchDebounce?.cancel();
+                    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
                       setState(() {
                         searchQuery = value;
                       });

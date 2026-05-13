@@ -1,3 +1,4 @@
+import 'dart:isolate';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -48,10 +49,19 @@ class _FolderViewState extends ConsumerState<FolderView> {
   // Store the full navigation path as a list of FolderItem
   List<FolderItem> _navigationPath = [];
 
+  // Simple cache: only refetch if these parameters change
+  BaseItemId? _lastViewId;
+  BaseItemId? _lastGenreFilterId;
+  bool? _lastIsFavoriteOverride;
+  bool? _lastIsOffline;
+
   @override
   void initState() {
     super.initState();
-    _loadFolders();
+    // Defer loading to after the first frame so the loading indicator renders immediately
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadFolders();
+    });
   }
 
   @override
@@ -60,17 +70,29 @@ class _FolderViewState extends ConsumerState<FolderView> {
     if (widget.view?.id != oldWidget.view?.id ||
         widget.genreFilter?.id != oldWidget.genreFilter?.id ||
         widget.isFavoriteOverride != oldWidget.isFavoriteOverride) {
-      _loadFolders();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadFolders();
+      });
     }
   }
 
   Future<void> _loadFolders() async {
+    final settings = FinampSettingsHelper.finampSettings;
+    _isOffline = settings.isOffline;
+
+    // Skip refetch if params haven't changed and we already have data
+    if (_folders.value.isNotEmpty &&
+        _lastViewId == widget.view?.id &&
+        _lastGenreFilterId == widget.genreFilter?.id &&
+        _lastIsFavoriteOverride == widget.isFavoriteOverride &&
+        _lastIsOffline == _isOffline) {
+      return;
+    }
+
     _isLoading.value = true;
     try {
       final jellyfinApiHelper = GetIt.instance<JellyfinApiHelper>();
       final isarDownloader = GetIt.instance<DownloadsService>();
-      final settings = FinampSettingsHelper.finampSettings;
-      _isOffline = settings.isOffline;
 
       List<BaseItemDto>? tracks;
       if (_isOffline) {
@@ -85,6 +107,8 @@ class _FolderViewState extends ConsumerState<FolderView> {
         );
         tracks = offlineItems.map((e) => e.baseItem).nonNulls.toList();
       } else {
+        // Fetch all tracks for folder view. The folder tree is built client-side
+        // from track paths, so we need all tracks.
         tracks = await jellyfinApiHelper.getItems(
           parentItem: widget.view,
           includeItemTypes: BaseItemDtoType.track.jellyfinName,
@@ -100,10 +124,26 @@ class _FolderViewState extends ConsumerState<FolderView> {
       _allTracks.clear();
       _allTracks.addAll(tracks ?? []);
 
-      final folders = FolderHelper.groupItemsByPath(_allTracks);
-      _folders.value = folders;
+      // Build folder tree in background isolate to avoid blocking UI.
+      // Pass JSON data for reliable cross-isolate transfer.
+      if (_allTracks.isNotEmpty) {
+        final trackJsons = _allTracks.map((t) => t.toJson()).toList();
+        final folderJsons = await Isolate.run(() => processFoldersInIsolate(trackJsons));
+        final folders = folderJsons
+            .map((json) => FolderItem.fromJson(json))
+            .toList();
+        _folders.value = folders;
+      } else {
+        _folders.value = [];
+      }
 
       _navigationPath.clear();
+
+      // Update cache keys
+      _lastViewId = widget.view?.id;
+      _lastGenreFilterId = widget.genreFilter?.id;
+      _lastIsFavoriteOverride = widget.isFavoriteOverride;
+      _lastIsOffline = _isOffline;
     } catch (e) {
       debugPrint('Error loading folders: $e');
       _folders.value = [];

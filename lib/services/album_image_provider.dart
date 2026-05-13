@@ -47,12 +47,14 @@ class AlbumImageRequest {
 }
 
 Future<void> initImageCache() async {
+  // Lazily populate cache on first access instead of loading all entries.
+  // Pre-load only the most recent _maxPlayerImageCache entries to keep startup fast.
   await _imageCache.config.repo.open();
   final entries = await _imageCache.config.repo.getAllObjects();
   final basePath = path_helper.join((await getTemporaryDirectory()).path, _imageCache.config.cacheKey);
-  for (final cacheEntry in entries) {
-    // Directly create FileInfo from cachentry instead of using CacheStore.getFile because that checks for file existence
-    // as it goes, and we do that when the entry is read and can't afford the speed penalty
+  // Sort by validTill descending so we keep the freshest entries
+  entries.sort((a, b) => b.validTill.compareTo(a.validTill));
+  for (final cacheEntry in entries.take(_maxPlayerImageCache)) {
     _playerImageCache[cacheEntry.key] = FileInfo(
       LocalFile(const LocalFileSystem(), File(path_helper.join(basePath, cacheEntry.relativePath))),
       FileSource.Cache,
@@ -61,17 +63,43 @@ Future<void> initImageCache() async {
     );
   }
   await _imageCache.config.repo.close();
+  _playerImageCacheInitialized = true;
 }
 
 final Map<String?, AlbumImageRequest> albumRequestsCache = {};
 
 // This caches mappings between cache keys and files on the player screen, to avoid the async delay of checking if
 // the cached file actually exists when transitioning between non-precached items with identical images.
+// Limited to _maxPlayerImageCache entries via LRU eviction to prevent unbounded growth.
 final Map<String?, FileInfo?> _playerImageCache = {};
+const _maxPlayerImageCache = 200;
+bool _playerImageCacheInitialized = false;
+
+// Tracks in-flight full-quality image downloads to avoid duplicate concurrent requests
+final Map<String, Future<FileInfo>> _inFlightDownloads = {};
 
 final _imageCache = DefaultCacheManager();
 
 const _infiniteHeight = 999999;
+
+/// Call when _playerImageCache grows beyond _maxPlayerImageCache to evict oldest entries.
+void _evictOldestPlayerImageCacheEntries() {
+  while (_playerImageCache.length > _maxPlayerImageCache) {
+    _playerImageCache.remove(_playerImageCache.keys.first);
+  }
+}
+
+/// Downloads an image via [_imageCache] and returns the [FileInfo].
+/// If [blurhashKey] is true, extends the cache validity to 365 days.
+Future<FileInfo> _downloadFullQualityImage(String url, String key, bool blurhashKey) async {
+  final imageFile = await _imageCache.downloadFile(url, key: key);
+  if (blurhashKey) {
+    final cacheObject = await _imageCache.store.retrieveCacheData(key);
+    final updated = cacheObject!.copyWith(validTill: DateTime.now().add(const Duration(days: 365)));
+    await _imageCache.store.putFile(updated);
+  }
+  return imageFile;
+}
 
 final AutoDisposeProviderFamily<AlbumImageInfo, AlbumImageRequest>
 albumImageProvider = Provider.autoDispose.family<AlbumImageInfo, AlbumImageRequest>((ref, request) {
@@ -146,23 +174,28 @@ albumImageProvider = Provider.autoDispose.family<AlbumImageInfo, AlbumImageReque
     if (request.fullQuality) {
       // If we want full quality player images, retrieve them via the image cache instead of linking directly.
       // In most cases, the initial null value will only be seen by the precache logic.
-      Future.sync(() async {
-        FileInfo imageFile = await _imageCache.downloadFile(imageUrl.toString(), key: key);
-        if (blurhashKey) {
-          // The default validTill length is 7 days.  Images fetched by blurhash cannot change, as that would change the
-          // blurhash, so update vaildTill to one year.
-          var cacheObject = await _imageCache.store.retrieveCacheData(key);
-          cacheObject = cacheObject!.copyWith(validTill: DateTime.now().add(Duration(days: 365)));
-          await _imageCache.store.putFile(cacheObject);
-        }
-        _playerImageCache[key] = imageFile;
-        ref.state = AlbumImageInfo(
-          FileImage(imageFile.file, scale: 0.25),
-          request,
-          Uri.file(imageFile.file.path),
-          fullQuality: true,
-        );
-      });
+      // Dedup: don't start a new download if one is already in-flight for this key.
+      if (_inFlightDownloads.containsKey(key)) {
+        // Another request is already downloading this image; return the placeholder.
+        // The in-flight future will update _playerImageCache and trigger a rebuild.
+      } else {
+        Future<FileInfo> downloadFuture = _downloadFullQualityImage(imageUrl.toString(), key, blurhashKey);
+        _inFlightDownloads[key] = downloadFuture;
+        // ignore: discarded_futures
+        downloadFuture.then((imageFile) {
+          _playerImageCache[key] = imageFile;
+          _evictOldestPlayerImageCacheEntries();
+          _inFlightDownloads.remove(key);
+          ref.state = AlbumImageInfo(
+            FileImage(imageFile.file, scale: 0.25),
+            request,
+            Uri.file(imageFile.file.path),
+            fullQuality: true,
+          );
+        }, onError: (_) {
+          _inFlightDownloads.remove(key);
+        });
+      }
       // Temporary result for the frame or so the cache loads
       return AlbumImageInfo(null, request, null, fullQuality: true);
     } else {

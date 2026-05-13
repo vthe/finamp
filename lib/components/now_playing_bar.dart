@@ -228,7 +228,15 @@ class NowPlayingBar extends StatelessWidget {
                         : Theme.of(context).cardColor,
                     elevation: 8.0,
                     child: StreamBuilder<MediaState>(
-                      stream: mediaStateStream.where((event) => event.mediaItem != null),
+                      stream: mediaStateStream
+                          .where((event) => event.mediaItem != null)
+                          .distinct(
+                            (a, b) =>
+                                a.mediaItem?.id == b.mediaItem?.id &&
+                                a.playbackState.playing == b.playbackState.playing &&
+                                a.playbackState.processingState == b.playbackState.processingState &&
+                                a.fadeState == b.fadeState,
+                          ),
                       initialData: MediaState(
                         audioHandler.mediaItem.valueOrNull,
                         audioHandler.playbackState.value,

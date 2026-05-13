@@ -13,6 +13,34 @@ class FolderItem {
     required this.items,
     this.subfolders = const [],
   });
+
+  Map<String, dynamic> toJson() => {
+    'path': path,
+    'name': name,
+    'items': items.map((e) => e.toJson()).toList(),
+    'subfolders': subfolders.map((e) => e.toJson()).toList(),
+  };
+
+  factory FolderItem.fromJson(Map<String, dynamic> json) => FolderItem(
+    path: json['path'] as String,
+    name: json['name'] as String,
+    items: (json['items'] as List<dynamic>)
+        .map((e) => BaseItemDto.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    subfolders: (json['subfolders'] as List<dynamic>)
+        .map((e) => FolderItem.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
+}
+
+/// Runs [FolderHelper.groupItemsByPath] in a background isolate.
+/// Accepts JSON-serialized track data for reliable cross-isolate transfer.
+List<Map<String, dynamic>> processFoldersInIsolate(List<Map<String, dynamic>> trackJsons) {
+  final tracks = trackJsons
+      .map((json) => BaseItemDto.fromJson(json))
+      .toList();
+  final folders = FolderHelper.groupItemsByPath(tracks);
+  return folders.map((f) => f.toJson()).toList();
 }
 
 /// Helper class to handle folder grouping based on item paths

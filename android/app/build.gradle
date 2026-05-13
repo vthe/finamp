@@ -70,7 +70,12 @@ android {
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            // Fall back to debug signing if no release keystore configured
+            if (keystoreProperties['storeFile'] != null) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
             resValue "string", "app_name", "Finamp"
             // shrinkResources false
             // minifyEnabled false
