@@ -282,17 +282,23 @@ class _MusicScreenTabViewState extends ConsumerState<MusicScreenTabView>
     if (letter.isEmpty) return;
 
     letterToSearch = letter;
-    var codePointToScrollTo = letter.toLowerCase().codeUnitAt(0);
-
-    // Max code point is lower case z to increase the chance of seeing a character
-    // past the target but below the ignore point
-    final maxCodePoint = 'z'.codeUnitAt(0);
 
     if (letter == '#') {
-      codePointToScrollTo = 0;
+      if (MediaQuery.disableAnimationsOf(context)) {
+        controller.jumpTo(0);
+      } else {
+        await controller.animateTo(
+          0,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.ease,
+        );
+      }
+      letterToSearch = null;
+      return;
     }
 
-    //TODO use binary search to improve performance for already loaded pages
+    final targetLetter = letter.toUpperCase();
+
     var itemList = _pagingController.itemList!;
     SortBy? tabSortBy = FinampSettingsHelper.finampSettings.tabSortBy[widget.tabContentType];
     bool reversed = FinampSettingsHelper.finampSettings.tabSortOrder[widget.tabContentType] == SortOrder.descending;
@@ -306,34 +312,30 @@ class _MusicScreenTabViewState extends ConsumerState<MusicScreenTabView>
           sortName = itemList[i].nameForSorting ?? "";
           break;
       }
-      if (sortName.isEmpty) continue; // assume empty names are at the start
-      int itemCodePoint = sortName.toLowerCase().codeUnitAt(0);
-      if (itemCodePoint <= maxCodePoint) {
-        final comparisonResult = itemCodePoint - codePointToScrollTo;
-        if (comparisonResult == 0) {
-          timer?.cancel();
-          await controller.scrollToIndex(
-            i,
-            duration: _getAnimationDurationForOffsetToIndex(i),
-            preferPosition: AutoScrollPosition.begin,
-          );
+      if (sortName.isEmpty) continue;
+      String itemFirstLetter = getFirstSortLetter(sortName);
+      if (itemFirstLetter == '#') continue;
+      final comparisonResult = itemFirstLetter.compareTo(targetLetter);
+      if (comparisonResult == 0) {
+        timer?.cancel();
+        await controller.scrollToIndex(
+          i,
+          duration: _getAnimationDurationForOffsetToIndex(i),
+          preferPosition: AutoScrollPosition.begin,
+        );
 
-          letterToSearch = null;
-          return;
-        } else if (reversed ? comparisonResult < 0 : comparisonResult > 0) {
-          // If the letter is before the current item, there was no previous match (letter doesn't seem to exist in library)
-          // scroll to the previous item instead
-          timer?.cancel();
-          await controller.scrollToIndex(
-            (i - 1).clamp(0, itemList.length - 1),
-            // duration: scrollDuration,
-            duration: _getAnimationDurationForOffsetToIndex(i),
-            preferPosition: AutoScrollPosition.middle,
-          );
+        letterToSearch = null;
+        return;
+      } else if (reversed ? comparisonResult < 0 : comparisonResult > 0) {
+        timer?.cancel();
+        await controller.scrollToIndex(
+          (i - 1).clamp(0, itemList.length - 1),
+          duration: _getAnimationDurationForOffsetToIndex(i),
+          preferPosition: AutoScrollPosition.middle,
+        );
 
-          letterToSearch = null;
-          return;
-        }
+        letterToSearch = null;
+        return;
       }
     }
 
@@ -655,28 +657,27 @@ List<BaseItemDto> sortItems(List<BaseItemDto> itemsToSort, SortBy? sortBy, SortO
       switch (sortBy ?? SortBy.sortName) {
         case SortBy.sortName:
           if (a.nameForSorting == null || b.nameForSorting == null) {
-            // Returning 0 is the same as both being the same
             return 0;
           } else {
-            return a.nameForSorting!.compareTo(b.nameForSorting!);
+            return getPinyinSortKey(a.nameForSorting!).compareTo(getPinyinSortKey(b.nameForSorting!));
           }
         case SortBy.album:
           if (a.album == null || b.album == null) {
             return 0;
           } else {
-            return a.album!.compareTo(b.album!);
+            return getPinyinSortKey(a.album!).compareTo(getPinyinSortKey(b.album!));
           }
         case SortBy.albumArtist:
           if (a.albumArtist == null || b.albumArtist == null) {
             return 0;
           } else {
-            return a.albumArtist!.compareTo(b.albumArtist!);
+            return getPinyinSortKey(a.albumArtist!).compareTo(getPinyinSortKey(b.albumArtist!));
           }
         case SortBy.artist:
           if (a.artists == null || b.artists == null) {
             return 0;
           } else {
-            return a.artists!.join(', ').compareTo(b.artists!.join(', '));
+            return getPinyinSortKey(a.artists!.join(', ')).compareTo(getPinyinSortKey(b.artists!.join(', ')));
           }
         case SortBy.communityRating:
           if (a.communityRating == null || b.communityRating == null) {
@@ -765,8 +766,7 @@ List<BaseItemDto> sortArtistTracks(List<BaseItemDto> items) {
         if (cmp != 0) return cmp;
       }
     }
-    // fallback to normal string comparison
-    return a.compareTo(b);
+    return getPinyinSortKey(a).compareTo(getPinyinSortKey(b));
   }
 
   items.sort((a, b) {
@@ -785,7 +785,10 @@ List<BaseItemDto> sortArtistTracks(List<BaseItemDto> items) {
     final indexCompare = _compareNullable<int>(a.indexNumber, b.indexNumber);
     if (indexCompare != 0) return indexCompare;
     // 5. SortName
-    return _compareNullable<String>(a.sortName, b.sortName);
+    if (a.sortName == null && b.sortName == null) return 0;
+    if (a.sortName == null) return 1;
+    if (b.sortName == null) return -1;
+    return getPinyinSortKey(a.sortName!).compareTo(getPinyinSortKey(b.sortName!));
   });
 
   return items;

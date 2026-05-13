@@ -8,8 +8,52 @@ import 'package:finamp/services/finamp_settings_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:focus_on_it/focus_on_it.dart';
+import 'package:lpinyin/lpinyin.dart';
 
 enum Drag { start, update, end }
+
+String getFirstSortLetter(String text) {
+  if (text.isEmpty) return '#';
+
+  final firstChar = text[0];
+  final codeUnit = firstChar.codeUnitAt(0);
+
+  if (_isChineseCharacter(codeUnit)) {
+    final pinyin = PinyinHelper.getShortPinyin(firstChar);
+    if (pinyin.isNotEmpty) {
+      return pinyin[0].toUpperCase();
+    }
+    return '#';
+  }
+
+  if ((codeUnit >= 65 && codeUnit <= 90) || (codeUnit >= 97 && codeUnit <= 122)) {
+    return firstChar.toUpperCase();
+  }
+
+  return '#';
+}
+
+String getPinyinSortKey(String text) {
+  if (text.isEmpty) return text;
+
+  final buffer = StringBuffer();
+  for (int i = 0; i < text.length; i++) {
+    final codeUnit = text[i].codeUnitAt(0);
+    if (_isChineseCharacter(codeUnit)) {
+      buffer.write(PinyinHelper.getPinyin(text[i], separator: '', format: PinyinFormat.WITHOUT_TONE));
+    } else {
+      buffer.write(text[i].toLowerCase());
+    }
+  }
+
+  return buffer.toString().replaceFirst(RegExp(r'^(the |a |an )'), '');
+}
+
+bool _isChineseCharacter(int codeUnit) {
+  return (codeUnit >= 0x4E00 && codeUnit <= 0x9FFF) ||
+      (codeUnit >= 0x3400 && codeUnit <= 0x4DBF) ||
+      (codeUnit >= 0xF900 && codeUnit <= 0xFAFF);
+}
 
 class AlphabetList extends ConsumerStatefulWidget {
   final Function(String) callback;
