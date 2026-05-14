@@ -380,6 +380,46 @@ class DownloadsService {
     });
   }
 
+  Future<void> clearDownloadQueue() async {
+    _downloadsLogger.info("Clearing download queue.");
+
+    _isar.writeTxnSync(() {
+      _isar.isarTaskDatas
+          .where()
+          .typeEqualTo(IsarTaskDataType.syncNode)
+          .or()
+          .typeEqualTo(IsarTaskDataType.deleteNode)
+          .findAllSync()
+          .forEach((task) {
+        _isar.isarTaskDatas.deleteSync(task.id);
+      });
+    });
+
+    var itemsToCancel = _isar.downloadItems
+        .where()
+        .stateEqualTo(DownloadItemState.enqueued)
+        .or()
+        .stateEqualTo(DownloadItemState.downloading)
+        .findAllSync();
+    for (var item in itemsToCancel) {
+      await downloadTaskQueue.remove(item);
+    }
+
+    _isar.writeTxnSync(() {
+      var failedItems = _isar.downloadItems
+          .where()
+          .stateEqualTo(DownloadItemState.failed)
+          .or()
+          .stateEqualTo(DownloadItemState.syncFailed)
+          .findAllSync();
+      for (var item in failedItems) {
+        updateItemState(item, DownloadItemState.notDownloaded);
+      }
+    });
+
+    _downloadsLogger.info("Download queue cleared.");
+  }
+
   /// Attempt to resume syncing/downloading.  Called when leaving offline mode,
   /// coming out of background, and switching to downloads screen
   void restartDownloads() {
@@ -1055,7 +1095,8 @@ class DownloadsService {
         _downloadsLogger.severe("No valid download profiles for required item ${item.name}");
         return;
       } else {
-        doNullUpdate = item.syncDownloadLocation != null;
+        doNullUpdate = item.syncTranscodingProfile?.downloadLocationId != null &&
+            FinampSettingsHelper.finampSettings.downloadLocationsMap[item.syncTranscodingProfile?.downloadLocationId] == null;
       }
     }
 

@@ -26,8 +26,10 @@ import 'package:finamp/models/finamp_models.dart';
 import 'package:finamp/models/jellyfin_models.dart' as jellyfin_models;
 import 'package:finamp/screens/blurred_player_screen_background.dart';
 import 'package:finamp/services/current_album_image_provider.dart';
+import 'package:finamp/services/downloads_service.dart';
 import 'package:finamp/services/feedback_helper.dart';
 import 'package:finamp/services/finamp_settings_helper.dart';
+import 'package:finamp/services/finamp_user_helper.dart';
 import 'package:finamp/services/media_state_stream.dart';
 import 'package:finamp/services/music_player_background_task.dart';
 import 'package:finamp/services/process_artist.dart';
@@ -1146,6 +1148,16 @@ class QueueSectionHeader extends ConsumerWidget {
                           },
                           onLongPress: () => showRadioMenu(context),
                         ),
+                        IconButtonWithSemantics(
+                          label: AppLocalizations.of(context)!.downloadItem,
+                          icon: TablerIcons.download,
+                          iconSize: 28.0,
+                          visualDensity: VisualDensity.standard,
+                          onPressed: () {
+                            _downloadQueueTracks(context, queueService);
+                            FeedbackHelper.feedback(FeedbackType.selection);
+                          },
+                        ),
                       ],
                     );
                   },
@@ -1308,4 +1320,46 @@ class PreviousTracksSectionHeader extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) => false;
+}
+
+Future<void> _downloadQueueTracks(BuildContext context, QueueService queueService) async {
+  final queueInfo = queueService.getQueue();
+  final downloadsService = GetIt.instance<DownloadsService>();
+  final finampUserHelper = GetIt.instance<FinampUserHelper>();
+
+  final profile = FinampSettingsHelper.finampSettings.shouldTranscodeDownloads == TranscodeDownloadsSetting.always
+      ? FinampSettingsHelper.finampSettings.downloadTranscodingProfile
+      : DownloadProfile(transcodeCodec: FinampTranscodingCodec.original);
+  profile.downloadLocationId = FinampSettingsHelper.finampSettings.defaultDownloadLocation;
+
+  final viewId = finampUserHelper.currentUser!.currentViewId!;
+
+  final allItems = [...queueInfo?.nextUp ?? [], ...queueInfo?.queue ?? []];
+  var downloadCount = 0;
+
+  for (final queueItem in allItems) {
+    try {
+      final baseItem = queueItem.baseItem;
+      final stub = DownloadStub.fromItem(type: DownloadItemType.track, item: baseItem);
+
+      final status = downloadsService.getStatus(stub, null);
+      if (status == DownloadItemStatus.notNeeded) {
+        await downloadsService.addDownload(
+          stub: stub,
+          transcodeProfile: profile,
+          viewId: viewId,
+        );
+        downloadCount++;
+      }
+    } catch (e) {
+      // skip items that fail
+    }
+  }
+
+  if (downloadCount > 0 && context.mounted) {
+    GlobalSnackbar.message(
+      (scaffold) => AppLocalizations.of(scaffold)!.downloadsQueued,
+      isConfirmation: true,
+    );
+  }
 }

@@ -1540,8 +1540,10 @@ class DownloadItem extends DownloadStub {
       FinampSettingsHelper.finampSettings.downloadLocationsMap[fileTranscodingProfile?.downloadLocationId];
 
   @ignore
-  DownloadLocation? get syncDownloadLocation =>
-      FinampSettingsHelper.finampSettings.downloadLocationsMap[syncTranscodingProfile?.downloadLocationId];
+  DownloadLocation get syncDownloadLocation {
+    final location = FinampSettingsHelper.finampSettings.downloadLocationsMap[syncTranscodingProfile?.downloadLocationId];
+    return location ?? FinampSettingsHelper.finampSettings.internalTrackDir;
+  }
 
   @ignore
   File? get file {

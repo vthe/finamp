@@ -1681,6 +1681,18 @@
   "@repairDownloads": {
     "description": "Tooltip for downloads repair button."
   },
+  "clearDownloadQueue": "Clear download queue",
+  "@clearDownloadQueue": {
+    "description": "Tooltip and title for clear download queue button."
+  },
+  "clearDownloadQueueConfirm": "Are you sure you want to clear all pending, active, and failed downloads? This will not delete already downloaded files.",
+  "@clearDownloadQueueConfirm": {
+    "description": "Confirmation message for clearing download queue."
+  },
+  "downloadQueueCleared": "Download queue has been cleared.",
+  "@downloadQueueCleared": {
+    "description": "Message displayed after download queue is cleared."
+  },
   "requireWifiForDownloads": "Require WiFi when downloading.",
   "@requireWifiForDownloads": {
     "description": "Description of setting for only performing downloads while on wifi"

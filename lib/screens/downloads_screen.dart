@@ -2,6 +2,7 @@ import 'package:finamp/l10n/app_localizations.dart';
 import 'package:finamp/models/finamp_models.dart';
 import 'package:flutter/material.dart';
 
+import '../components/DownloadsScreen/clear_download_queue_button.dart';
 import '../components/DownloadsScreen/download_error_screen_button.dart';
 import '../components/DownloadsScreen/downloaded_items_list.dart';
 import '../components/DownloadsScreen/downloads_overview.dart';
@@ -21,7 +22,7 @@ class DownloadsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.downloads),
-        actions: const [SyncDownloadsButton(), RepairDownloadsButton(), DownloadErrorScreenButton()],
+        actions: const [ClearDownloadQueueButton(), SyncDownloadsButton(), RepairDownloadsButton(), DownloadErrorScreenButton()],
       ),
       body: PaddedCustomScrollview(
         slivers: [

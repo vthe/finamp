@@ -70,7 +70,7 @@ final downloadSizeTextProvider = FutureProvider.autoDispose.family((Ref ref, Dow
         final fileSize = await downloadsService.getFileSize(item);
         // only show name if there is more than one location
         final locationName = FinampSettingsHelper.finampSettings.downloadLocationsMap.length > 1
-            ? FinampSettingsHelper.finampSettings.downloadLocationsMap[item.syncDownloadLocation?.id]?.name
+            ? FinampSettingsHelper.finampSettings.downloadLocationsMap[item.syncDownloadLocation.id]?.name
             : null;
         return (BuildContext context) => AppLocalizations.of(context)!.collectionDownloadInfo(
           profile?.bitrateKbps ?? "null",

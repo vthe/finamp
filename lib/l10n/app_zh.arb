@@ -1023,6 +1023,18 @@
     "@repairDownloads": {
         "description": "Tooltip for downloads repair button."
     },
+    "clearDownloadQueue": "清除下载队列",
+    "@clearDownloadQueue": {
+        "description": "Tooltip and title for clear download queue button."
+    },
+    "clearDownloadQueueConfirm": "确定要清除所有等待中、进行中及失败的下载吗？这不会删除已经下载完成的文件。",
+    "@clearDownloadQueueConfirm": {
+        "description": "Confirmation message for clearing download queue."
+    },
+    "downloadQueueCleared": "下载队列已清除。",
+    "@downloadQueueCleared": {
+        "description": "Message displayed after download queue is cleared."
+    },
     "requireWifiForDownloads": "下载时需要 WiFi。",
     "@requireWifiForDownloads": {
         "description": "Description of setting for only performing downloads while on wifi"

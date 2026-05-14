@@ -1158,15 +1158,9 @@ class DownloadsSyncService {
       // Download item files if needed
       //
       if (canonParent != null && canonParent!.type.hasFiles && asRequired) {
-        if (canonParent!.syncDownloadLocation == null) {
-          _syncLogger.severe("could not download ${parent.name}, no download location found.");
-          _isar.writeTxnSync(() {
-            _downloadsService.updateItemState(canonParent!, DownloadItemState.failed);
-          });
-        } else {
-          await _initiateDownload(canonParent!);
-        }
+        await _initiateDownload(canonParent!);
       }
+
       // Set priority high to prevent stalling, but lower than creating network requests
     }, Priority.animation);
   }
@@ -1564,7 +1558,7 @@ class DownloadsSyncService {
   /// Used by [_downloadTrack] for a consistent directory structure.
   (String, String) _getTrackDownloadPath(DownloadItem downloadItem) {
     assert(downloadItem.type == DownloadItemType.track);
-    var downloadLocation = downloadItem.syncDownloadLocation!;
+    var downloadLocation = downloadItem.syncDownloadLocation;
     var item = downloadItem.baseItem!;
     String fileName;
     String subDirectory;
@@ -1597,7 +1591,7 @@ class DownloadsSyncService {
   /// Prepares for downloading of a given track by filling in the path information
   /// and media sources, and marking item as enqueued in isar.
   Future<void> _downloadTrack(DownloadItem downloadItem) async {
-    assert(downloadItem.type == DownloadItemType.track && downloadItem.syncDownloadLocation != null);
+    assert(downloadItem.type == DownloadItemType.track);
     var item = downloadItem.baseItem!;
 
     if (downloadItem.baseItem!.mediaSources == null && FinampSettingsHelper.finampSettings.isOffline) {
@@ -1670,8 +1664,8 @@ class DownloadsSyncService {
   /// Prepares for downloading of a given image by filling in the path information
   /// and marking item as enqueued in isar.
   Future<void> _downloadImage(DownloadItem downloadItem) async {
-    assert(downloadItem.type == DownloadItemType.image && downloadItem.syncDownloadLocation != null);
-    var downloadLocation = downloadItem.syncDownloadLocation!;
+    assert(downloadItem.type == DownloadItemType.image);
+    var downloadLocation = downloadItem.syncDownloadLocation;
 
     String subDirectory = FINAMP_BASE_IMAGES_DIRECTORY;
 
