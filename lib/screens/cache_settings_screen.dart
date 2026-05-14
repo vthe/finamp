@@ -35,6 +35,7 @@ class _CacheSettingsScreenState extends ConsumerState<CacheSettingsScreen> {
         padding: const EdgeInsets.only(bottom: 200.0),
         children: const [
           _StreamingCacheEnabledToggle(),
+          _AutoDownloadOnListenToggle(),
           Divider(),
           _CacheStatisticsSection(),
           Divider(),
@@ -58,6 +59,21 @@ class _StreamingCacheEnabledToggle extends ConsumerWidget {
       subtitle: Text(AppLocalizations.of(context)!.streamingCacheSubtitle),
       value: ref.watch(finampSettingsProvider.streamingCacheEnabled),
       onChanged: FinampSetters.setStreamingCacheEnabled,
+    );
+  }
+}
+
+/// Toggle to enable/disable auto download when listening
+class _AutoDownloadOnListenToggle extends ConsumerWidget {
+  const _AutoDownloadOnListenToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SwitchListTile.adaptive(
+      title: Text(AppLocalizations.of(context)!.autoDownloadOnListenTitle),
+      subtitle: Text(AppLocalizations.of(context)!.autoDownloadOnListenSubtitle),
+      value: ref.watch(finampSettingsProvider.autoDownloadOnListen),
+      onChanged: FinampSetters.setAutoDownloadOnListen,
     );
   }
 }

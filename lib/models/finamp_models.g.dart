@@ -458,6 +458,9 @@ class FinampSettingsAdapter extends TypeAdapter<FinampSettings> {
         maxStreamingCacheSizeMB: fields[149] == null
             ? 500
             : (fields[149] as num).toInt(),
+        autoDownloadOnListen: fields[150] == null
+            ? false
+            : fields[150] as bool,
       )
       ..disableGesture = fields[19] == null ? false : fields[19] as bool
       ..showFastScroller = fields[25] == null ? true : fields[25] as bool
@@ -476,7 +479,7 @@ class FinampSettingsAdapter extends TypeAdapter<FinampSettings> {
   @override
   void write(BinaryWriter writer, FinampSettings obj) {
     writer
-      ..writeByte(143)
+      ..writeByte(144)
       ..writeByte(0)
       ..write(obj.isOffline)
       ..writeByte(1)
@@ -762,7 +765,9 @@ class FinampSettingsAdapter extends TypeAdapter<FinampSettings> {
       ..writeByte(148)
       ..write(obj.streamingCacheEnabled)
       ..writeByte(149)
-      ..write(obj.maxStreamingCacheSizeMB);
+      ..write(obj.maxStreamingCacheSizeMB)
+      ..writeByte(150)
+      ..write(obj.autoDownloadOnListen);
   }
 
   @override

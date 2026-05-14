@@ -313,6 +313,17 @@ Future<void> setupHive() async {
   
   // Initialize streaming cache service
   await StreamingCacheService.init(isar);
+
+  _mainLog.info("Streaming cache entries on startup: ${await StreamingCacheService.instance.getCacheEntryCount()}, size: ${await StreamingCacheService.instance.getTotalCacheSize()} MB");
+
+  final tempDir = await getTemporaryDirectory();
+  final cacheDir = '${tempDir.path}/finamp_streaming_cache';
+  try {
+    final cleaned = await StreamingCacheService.instance.cleanupMissingFiles(cacheDir);
+    _mainLog.info("Cleaned up $cleaned stale streaming cache entries, remaining: ${await StreamingCacheService.instance.getCacheEntryCount()}");
+  } catch (e) {
+    _mainLog.warning("Failed to clean up stale cache entries: $e");
+  }
 }
 
 Future<void> _setupProviders() async {

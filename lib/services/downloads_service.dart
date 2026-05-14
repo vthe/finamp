@@ -21,6 +21,7 @@ import '../models/finamp_models.dart';
 import '../models/jellyfin_models.dart';
 import 'downloads_service_backend.dart';
 import 'finamp_settings_helper.dart';
+import 'streaming_cache_service.dart';
 
 const isarDatabaseName = "finamp_db.isar";
 const repairStepTrackingName = "repairStep";
@@ -452,6 +453,79 @@ class DownloadsService {
 
     await resync(stub, viewId);
   }
+
+  Future<bool> importCacheFileAsDownload({
+    required String cacheFilePath,
+    required DownloadStub stub,
+    required BaseItemDto baseItem,
+    required DownloadProfile profile,
+  }) async {
+    if (getStatus(stub, null) != DownloadItemStatus.notNeeded) return false;
+
+    var downloadLocation = FinampSettingsHelper.finampSettings.downloadLocationsMap[profile.downloadLocationId];
+    if (downloadLocation == null) {
+      downloadLocation = FinampSettingsHelper.finampSettings.downloadLocationsMap.values
+          .firstWhere((l) => l.baseDirectory == DownloadLocationType.internalDocuments);
+    }
+    final location = downloadLocation;
+
+    final container = baseItem.mediaSources?.firstOrNull?.container;
+    final extension = container == null ? "" : ".${_fsSafe(container)}";
+
+    String fileName;
+    String subDirectory;
+    if (location.useHumanReadableNames) {
+      final indexNumber = baseItem.indexNumber != null ? "[${baseItem.indexNumber}] " : "";
+      final artist = (baseItem.artists?.isNotEmpty ?? false) ? "${baseItem.artists?.first} - " : "";
+      final originalFilename = baseItem.mediaSources
+          ?.firstWhere((e) => e.type.toLowerCase() == "default")
+          .name;
+      fileName = _fsSafe(
+            "${originalFilename ?? "$indexNumber$artist${baseItem.name}"}_${baseItem.id.raw.substring(0, 8)}",
+          ) ??
+          baseItem.id.raw;
+      final pathSegments = [_fsSafe(baseItem.albumArtist), _fsSafe(baseItem.album)].nonNulls;
+      subDirectory = path_helper.joinAll(pathSegments);
+      if (path_helper.split(location.currentPath).lastOrNull?.toLowerCase() != "finamp") {
+        subDirectory = path_helper.join("Finamp", subDirectory);
+      }
+    } else {
+      fileName = baseItem.id.raw;
+      subDirectory = FINAMP_BASE_DOWNLOAD_DIRECTORY;
+    }
+
+    final targetDir = Directory(path_helper.join(location.currentPath, subDirectory));
+    if (!await targetDir.exists()) {
+      await targetDir.create(recursive: true);
+    }
+    final targetFile = File(path_helper.join(targetDir.path, "$fileName$extension"));
+    await File(cacheFilePath).copy(targetFile.path);
+    await File(cacheFilePath).delete();
+
+    try {
+      final urlHash = cacheFilePath.split('/').last.replaceAll('.cache', '');
+      await StreamingCacheService.instance.deleteCacheEntry(urlHash);
+    } catch (e) {
+      _downloadsLogger.warning("Failed to delete cache entry after import: $e");
+    }
+
+    _isar.writeTxnSync(() {
+      var item = stub.asItem(profile);
+      item.path = path_helper.relative(targetFile.path, from: location.currentPath);
+      item.state = DownloadItemState.complete;
+      item.fileTranscodingProfile = profile;
+      _isar.downloadItems.putSync(item, saveLinks: false);
+      var anchorItem = _anchor.asItem(null);
+      _isar.downloadItems.putSync(anchorItem, saveLinks: false);
+      anchorItem.requires.updateSync(link: [item]);
+    });
+
+    updateDownloadCounts();
+    _downloadsLogger.info("Imported cache file as download: ${baseItem.name}");
+    return true;
+  }
+
+  String? _fsSafe(String? unsafe) => unsafe?.replaceAll(RegExp(r'[/?<>:*|.\\"]'), "_");
 
   /// Removes the anchor link to an item and sync deletes it.  This will allow the
   /// item to be deleted but may not result in deletion actually occurring as the

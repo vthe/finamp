@@ -2872,5 +2872,13 @@
     "explicit": "露骨内容",
     "@explicit": {
         "description": "Label for content that is considered explicit, usually marked by an 'E' in music apps"
+    },
+    "autoDownloadOnListenTitle": "边听边下载",
+    "@autoDownloadOnListenTitle": {
+        "description": "Title for the auto-download on listen toggle"
+    },
+    "autoDownloadOnListenSubtitle": "收听歌曲时自动下载到本地",
+    "@autoDownloadOnListenSubtitle": {
+        "description": "Subtitle describing auto-download on listen behavior"
     }
 }

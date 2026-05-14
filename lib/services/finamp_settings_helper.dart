@@ -180,6 +180,7 @@ class FinampSettingsHelper {
 
     finampSettingsTemp.streamingCacheEnabled = DefaultSettings.streamingCacheEnabled;
     finampSettingsTemp.maxStreamingCacheSizeMB = DefaultSettings.maxStreamingCacheSizeMB;
+    finampSettingsTemp.autoDownloadOnListen = DefaultSettings.autoDownloadOnListen;
 
     Hive.box<FinampSettings>("FinampSettings").put("FinampSettings", finampSettingsTemp);
   }

@@ -254,6 +254,7 @@ class DefaultSettings {
   static const useAndroidGainEffect = true;
   static const streamingCacheEnabled = true;
   static const maxStreamingCacheSizeMB = 500;
+  static const autoDownloadOnListen = false;
 }
 
 @HiveType(typeId: 28)
@@ -401,6 +402,7 @@ class FinampSettings {
     this.useAndroidGainEffect = DefaultSettings.useAndroidGainEffect,
     this.streamingCacheEnabled = DefaultSettings.streamingCacheEnabled,
     this.maxStreamingCacheSizeMB = DefaultSettings.maxStreamingCacheSizeMB,
+    this.autoDownloadOnListen = DefaultSettings.autoDownloadOnListen,
   });
 
   @HiveField(0, defaultValue: DefaultSettings.isOffline)
@@ -867,6 +869,9 @@ class FinampSettings {
 
   @HiveField(149, defaultValue: DefaultSettings.maxStreamingCacheSizeMB)
   int maxStreamingCacheSizeMB;
+
+  @HiveField(150, defaultValue: DefaultSettings.autoDownloadOnListen)
+  bool autoDownloadOnListen;
 
   static Future<FinampSettings> create() async {
     final downloadLocation = await DownloadLocation.create(

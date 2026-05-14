@@ -19,14 +19,18 @@ class FinampLogsHelper {
 
   Future<void> openLog() async {
     WidgetsFlutterBinding.ensureInitialized();
-    final basePath = (Platform.isAndroid || Platform.isIOS)
-        ? await getApplicationDocumentsDirectory()
-        : await getApplicationSupportDirectory();
-    final logFile = File(path_helper.join(basePath.path, "finamp-logs.txt"));
-    if (logFile.existsSync() && logFile.lengthSync() >= 1024 * 1024 * 10) {
-      logFile.renameSync(path_helper.join(basePath.path, "finamp-logs-old.txt"));
+    try {
+      final basePath = (Platform.isAndroid || Platform.isIOS)
+          ? await getApplicationDocumentsDirectory()
+          : await getApplicationSupportDirectory();
+      final logFile = File(path_helper.join(basePath.path, "finamp-logs.txt"));
+      if (logFile.existsSync() && logFile.lengthSync() >= 1024 * 1024 * 10) {
+        logFile.renameSync(path_helper.join(basePath.path, "finamp-logs-old.txt"));
+      }
+      _logFileWriter = logFile.openWrite(mode: FileMode.writeOnlyAppend);
+    } catch (e, stack) {
+      debugPrint("Failed to open log file: $e\n$stack");
     }
-    _logFileWriter = logFile.openWrite(mode: FileMode.writeOnlyAppend);
   }
 
   void addLog(LogRecord log) {

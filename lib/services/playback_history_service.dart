@@ -9,14 +9,18 @@ import 'package:finamp/services/queue_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:logging/logging.dart';
+import 'package:path/path.dart' as path_helper;
+import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../models/finamp_models.dart';
 import '../models/jellyfin_models.dart' as jellyfin_models;
+import 'downloads_service.dart';
 import 'finamp_settings_helper.dart';
 import 'jellyfin_api_helper.dart';
 import 'offline_listen_helper.dart';
+import 'streaming_cache_service.dart';
 
 /// A track queueing service for Finamp.
 class PlaybackHistoryService {
@@ -306,6 +310,8 @@ class PlaybackHistoryService {
       previousTrackTotalPlayTimeInMilliseconds = _currentTrack!.endTime!
           .difference(_currentTrack!.startTime)
           .inMilliseconds;
+
+      unawaited(_recordCacheEntryForTrack(_currentTrack!.item));
     }
 
     if (previousTrackTotalPlayTimeInMilliseconds < 1000) {
@@ -322,6 +328,8 @@ class PlaybackHistoryService {
     _trimHistory();
     _saveHistory();
     _historyStream.add(_history);
+
+    unawaited(_triggerAutoDownload(currentTrack));
 
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       WindowManager.instance.setTitle(
@@ -371,6 +379,85 @@ class PlaybackHistoryService {
   void _trimHistory() {
     while (_history.length > _maxHistoryItems) {
       _history.removeAt(0);
+    }
+  }
+
+  Future<void> _recordCacheEntryForTrack(FinampQueueItem item) async {
+    try {
+      if (!FinampSettingsHelper.finampSettings.streamingCacheEnabled) return;
+
+      final trackUrl = item.item.id;
+      final urlHash = trackUrl.hashCode.toRadixString(36);
+      final tempDir = await getTemporaryDirectory();
+      final cacheFile = File(path_helper.join(tempDir.path, 'finamp_streaming_cache', '$urlHash.cache'));
+
+      if (await cacheFile.exists()) {
+        final fileSize = await cacheFile.length();
+        final fileSizeMB = (fileSize / (1024 * 1024)).ceil();
+        await StreamingCacheService.instance.recordCachedUrl(
+          urlHash: urlHash,
+          fileUrl: trackUrl,
+          fileSizeMB: fileSizeMB,
+        );
+        _playbackHistoryServiceLogger.fine("Recorded cache entry for finished track: ${item.item.title}");
+      }
+    } catch (e) {
+      _playbackHistoryServiceLogger.warning("Failed to record cache entry: $e");
+    }
+  }
+
+  Future<void> _triggerAutoDownload(FinampQueueItem item) async {
+    try {
+      if (!FinampSettingsHelper.finampSettings.autoDownloadOnListen) return;
+      if (FinampSettingsHelper.finampSettings.isOffline) return;
+
+      final itemJsonRaw = item.item.extras!["itemJson"];
+      final Map<String, dynamic> itemJson = itemJsonRaw is Map<String, dynamic>
+          ? itemJsonRaw
+          : Map<String, dynamic>.from(itemJsonRaw as Map);
+      final baseItem = jellyfin_models.BaseItemDto.fromJson(itemJson);
+      final downloadsService = GetIt.instance<DownloadsService>();
+
+      final stub = DownloadStub.fromItem(type: DownloadItemType.track, item: baseItem);
+      if (downloadsService.getStatus(stub, null) != DownloadItemStatus.notNeeded) return;
+
+      var downloadLocation = FinampSettingsHelper.finampSettings.defaultDownloadLocation;
+      if (!FinampSettingsHelper.finampSettings.downloadLocationsMap.containsKey(downloadLocation)) {
+        downloadLocation = null;
+      }
+      downloadLocation ??= FinampSettingsHelper.finampSettings.internalTrackDir.id;
+
+      final profile = FinampSettingsHelper.finampSettings.shouldTranscodeDownloads == TranscodeDownloadsSetting.always
+          ? FinampSettingsHelper.finampSettings.downloadTranscodingProfile
+          : DownloadProfile(transcodeCodec: FinampTranscodingCodec.original);
+      profile.downloadLocationId = downloadLocation;
+
+      if (FinampSettingsHelper.finampSettings.streamingCacheEnabled) {
+        final trackUrl = item.item.id;
+        final uriString = trackUrl;
+        final urlHash = uriString.hashCode.toRadixString(36);
+        final tempDir = await getTemporaryDirectory();
+        final cacheFile = File(path_helper.join(tempDir.path, 'finamp_streaming_cache', '$urlHash.cache'));
+
+        if (await cacheFile.exists()) {
+          _playbackHistoryServiceLogger.info("Importing cache file as download: ${item.item.title}");
+          await downloadsService.importCacheFileAsDownload(
+            cacheFilePath: cacheFile.path,
+            stub: stub,
+            baseItem: baseItem,
+            profile: profile,
+          );
+          return;
+        }
+      }
+
+      _playbackHistoryServiceLogger.info("Auto-downloading from network: ${item.item.title}");
+      unawaited(downloadsService.addDownload(
+        stub: stub,
+        transcodeProfile: profile,
+      ));
+    } catch (e) {
+      _playbackHistoryServiceLogger.warning("Failed to trigger auto download: $e");
     }
   }
 

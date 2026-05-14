@@ -1396,26 +1396,6 @@ class MusicPlayerBackgroundTask extends BaseAudioHandler with SeekHandler, Queue
                   tag: queueItem,
                 );
 
-            // For direct streaming, record cache entry in database
-            if (!shouldTranscode) {
-              final uriString = trackUri.toString();
-              final urlHash = uriString.hashCode.toRadixString(36);
-              
-              // Try to record in database, but don't fail playback if it fails
-              try {
-                final fileSize = await cacheFile.length();
-                final fileSizeMB = (fileSize / (1024 * 1024)).ceil();
-                
-                await StreamingCacheService.instance.recordCachedUrl(
-                  urlHash: urlHash,
-                  fileUrl: uriString,
-                  fileSizeMB: fileSizeMB,
-                );
-              } catch (e) {
-                _audioServiceBackgroundTaskLogger.warning("Failed to record cache entry in database: $e");
-              }
-            }
-
             return audioSource;
           } catch (e) {
             _audioServiceBackgroundTaskLogger.warning("Failed to create cached audio source: $e, falling back to direct streaming");

@@ -3366,5 +3366,13 @@
   "current": "Current",
   "@current": {
     "description": "Label for current value"
+  },
+  "autoDownloadOnListenTitle": "Auto-download When Listening",
+  "@autoDownloadOnListenTitle": {
+    "description": "Title for the auto-download on listen toggle"
+  },
+  "autoDownloadOnListenSubtitle": "Automatically download songs to your library when you listen to them",
+  "@autoDownloadOnListenSubtitle": {
+    "description": "Subtitle describing auto-download on listen behavior"
   }
 }
