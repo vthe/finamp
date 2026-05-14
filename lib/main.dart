@@ -76,6 +76,7 @@ import 'components/LogsScreen/share_logs_button.dart';
 import 'components/PlayerScreen/player_split_screen_scaffold.dart';
 import 'components/global_snackbar.dart';
 import 'models/finamp_models.dart';
+import 'models/media_item_adapter.dart';
 import 'models/migration_adapters.dart';
 import 'models/theme_mode_adapter.dart';
 import 'screens/active_downloads_screen.dart';
@@ -277,6 +278,7 @@ Future<void> setupHive() async {
   WidgetsFlutterBinding.ensureInitialized();
   Hive.init(dir.path);
   Hive.registerAdapters();
+  Hive.registerAdapter(MediaItemAdapter());
   Hive.registerAdapter(ThemeModeAdapter());
   Hive.registerAdapter(ColorAdapter());
   Hive.registerAdapter(LocaleAdapter());
@@ -287,6 +289,7 @@ Future<void> setupHive() async {
     Hive.openBox<FinampStorableQueueInfo>("Queues", path: dir.path),
     Hive.openBox<OfflineListen>("OfflineListens", path: dir.path),
     Hive.openBox<RawThemeResult>("CachedThemes", path: dir.path),
+    Hive.openBox<FinampHistoryItem>("PlaybackHistory", path: dir.path),
   ]);
 
   // If the settings box is empty, we add an initial settings value here.

@@ -7,6 +7,7 @@ import 'package:finamp/services/music_player_background_task.dart';
 import 'package:finamp/services/playon_service.dart';
 import 'package:finamp/services/queue_service.dart';
 import 'package:get_it/get_it.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:window_manager/window_manager.dart';
@@ -25,6 +26,10 @@ class PlaybackHistoryService {
   final _offlineListenLogHelper = GetIt.instance<OfflineListenLogHelper>();
   final _playbackHistoryServiceLogger = Logger("PlaybackHistoryService");
   final _playOnService = GetIt.instance<PlayOnService>();
+
+  final _historyBox = Hive.box<FinampHistoryItem>("PlaybackHistory");
+
+  static const _maxHistoryItems = 500;
 
   // internal state
 
@@ -46,6 +51,8 @@ class PlaybackHistoryService {
   final int _maxQueueLengthToReport = 100;
 
   PlaybackHistoryService() {
+    _loadHistory();
+
     FinampSettingsHelper.finampSettingsListener.addListener(() {
       final isOffline = FinampSettingsHelper.finampSettings.isOffline;
       if (!isOffline) {
@@ -312,12 +319,58 @@ class PlaybackHistoryService {
     _currentTrack = FinampHistoryItem(item: currentTrack, startTime: DateTime.now());
     _history.add(_currentTrack!); // current track is always the last item in the history
 
+    _trimHistory();
+    _saveHistory();
     _historyStream.add(_history);
 
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       WindowManager.instance.setTitle(
         "${_currentTrack?.item.item.artist != null ? '${_currentTrack?.item.item.artist} - ' : ''}${_currentTrack!.item.item.title} - Finamp",
       );
+    }
+  }
+
+  void _loadHistory() {
+    try {
+      if (_historyBox.isEmpty) {
+        _playbackHistoryServiceLogger.info("Playback history box is empty, nothing to load.");
+        return;
+      }
+      final items = _historyBox.values.toList();
+      _playbackHistoryServiceLogger.info("Loaded ${items.length} playback history items from box.");
+      _history.addAll(items);
+
+      if (_history.isNotEmpty) {
+        final lastItem = _history.last;
+        if (lastItem.endTime == null) {
+          _currentTrack = lastItem;
+          _playbackHistoryServiceLogger.info("Restored current track from history: ${lastItem.item.item.title}");
+        }
+      }
+
+      _historyStream.add(_history);
+    } catch (e, stack) {
+      _playbackHistoryServiceLogger.severe("Failed to load playback history: $e", e, stack);
+    }
+  }
+
+  Future<void> _saveHistory() async {
+    try {
+      _playbackHistoryServiceLogger.fine("Saving ${_history.length} playback history items...");
+      await _historyBox.clear();
+      await _historyBox.putAll({
+        for (int i = 0; i < _history.length; i++) i: _history[i],
+      });
+      await _historyBox.flush();
+      _playbackHistoryServiceLogger.fine("Saved ${_history.length} playback history items to box (${_historyBox.length} in box).");
+    } catch (e, stack) {
+      _playbackHistoryServiceLogger.severe("Failed to save playback history: $e", e, stack);
+    }
+  }
+
+  void _trimHistory() {
+    while (_history.length > _maxHistoryItems) {
+      _history.removeAt(0);
     }
   }
 

@@ -33,9 +33,11 @@ class PlaybackHistoryListTile extends ConsumerStatefulWidget {
 class _PlaybackHistoryListTileState extends ConsumerState<PlaybackHistoryListTile> {
   @override
   Widget build(BuildContext context) {
-    final baseItem = jellyfin_models.BaseItemDto.fromJson(
-      widget.item.item.item.extras!["itemJson"] as Map<String, dynamic>,
-    );
+    final itemJsonRaw = widget.item.item.item.extras!["itemJson"];
+    final Map<String, dynamic> itemJson = itemJsonRaw is Map<String, dynamic>
+        ? itemJsonRaw
+        : Map<String, dynamic>.from(itemJsonRaw as Map);
+    final baseItem = jellyfin_models.BaseItemDto.fromJson(itemJson);
 
     void menuCallback() async {
       unawaited(Feedback.forLongPress(context));
