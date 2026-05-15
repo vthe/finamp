@@ -1310,6 +1310,14 @@ extension FinampSetters on FinampSettingsHelper {
     ).put("FinampSettings", finampSettingsTemp);
   }
 
+  static void setShowLyricsInNotification(bool newShowLyricsInNotification) {
+    FinampSettings finampSettingsTemp = FinampSettingsHelper.finampSettings;
+    finampSettingsTemp.showLyricsInNotification = newShowLyricsInNotification;
+    Hive.box<FinampSettings>(
+      "FinampSettings",
+    ).put("FinampSettings", finampSettingsTemp);
+  }
+
   static void setBufferDuration(Duration newBufferDuration) {
     FinampSettings finampSettingsTemp = FinampSettingsHelper.finampSettings;
     finampSettingsTemp.bufferDuration = newBufferDuration;
@@ -1759,6 +1767,10 @@ extension FinampSettingsProviderSelectors on StreamProvider<FinampSettings> {
       .select((value) => value.requireValue.maxStreamingCacheSizeMB);
   ProviderListenable<bool> get autoDownloadOnListen => finampSettingsProvider
       .select((value) => value.requireValue.autoDownloadOnListen);
+  ProviderListenable<bool> get showLyricsInNotification =>
+      finampSettingsProvider.select(
+        (value) => value.requireValue.showLyricsInNotification,
+      );
   ProviderListenable<DownloadProfile> get downloadTranscodingProfile =>
       finampSettingsProvider.select(
         (value) => value.requireValue.downloadTranscodingProfile,

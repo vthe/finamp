@@ -1438,6 +1438,14 @@
     "@showSeekControlsOnMediaNotificationSubtitle": {
         "description": "Subtitle for the setting that controls if the media notification has a seekable progress bar."
     },
+    "showLyricsInNotificationTitle": "在通知栏中显示歌词",
+    "@showLyricsInNotificationTitle": {
+        "description": "Title for the setting that controls if lyrics are shown in the media notification."
+    },
+    "showLyricsInNotificationSubtitle": "开启后，通知栏标题将显示当前歌词行，歌名和歌手将显示在副标题中。",
+    "@showLyricsInNotificationSubtitle": {
+        "description": "Subtitle for the setting that controls if lyrics are shown in the media notification."
+    },
     "lyricsAlignmentTitle": "歌词对齐方式",
     "@lyricsAlignmentTitle": {
         "description": "Title for the setting that controls the alignment of lyrics in the lyrics view"

@@ -173,6 +173,10 @@ class MusicPlayerBackgroundTask extends BaseAudioHandler with SeekHandler, Queue
 
   final outputSwitcherChannel = MethodChannel('com.unicornsonlsd.finamp/output_switcher');
 
+  StreamSubscription<Duration>? _lyricsSyncSubscription;
+  int? _lastLyricLineIndex;
+  String? _lastLyricMediaItemId;
+
   /// Some Bluetooth headsets send skip and pause/play media button events in
   /// very quick succession for a double-tap skip gesture. This guard ignores a
   /// trailing play/pause event if it arrives right after skip, preventing an
@@ -611,7 +615,10 @@ class MusicPlayerBackgroundTask extends BaseAudioHandler with SeekHandler, Queue
   }
 
   /// Fully dispose the player instance.  Should only be called during app shutdown.
-  Future<void> dispose() => _player.dispose();
+  Future<void> dispose() {
+    _lyricsSyncSubscription?.cancel();
+    return _player.dispose();
+  }
 
   @override
   Future<void> play({bool disableFade = false}) async {
@@ -1363,6 +1370,109 @@ class MusicPlayerBackgroundTask extends BaseAudioHandler with SeekHandler, Queue
       }
       if (previous?.valueOrNull?.parentNormalizationGain != next.valueOrNull?.parentNormalizationGain) {
         _applyVolumeNormalization(mediaItem.valueOrNull);
+      }
+    });
+
+    _setupLyricsSync();
+  }
+
+  void _setupLyricsSync() {
+    _lyricsSyncSubscription?.cancel();
+    _lastLyricLineIndex = null;
+    _lastLyricMediaItemId = null;
+
+    _lyricsSyncSubscription = AudioService.position.listen((position) {
+      final currentItem = mediaItem.value;
+      if (currentItem == null) return;
+
+      if (_lastLyricMediaItemId != currentItem.id) {
+        _lastLyricMediaItemId = currentItem.id;
+        _lastLyricLineIndex = null;
+      }
+
+      final showLyrics = FinampSettingsHelper.finampSettings.showLyricsInNotification;
+      final originalTitle = currentItem.extras?["originalTitle"] as String?;
+      final originalArtist = currentItem.extras?["originalArtist"] as String?;
+
+      if (!showLyrics) {
+        _restoreOriginalMetadata(currentItem, originalTitle, originalArtist);
+        return;
+      }
+
+      _syncLyricsToNotification(currentItem, position, originalTitle, originalArtist);
+    });
+  }
+
+  void _restoreOriginalMetadata(MediaItem currentItem, String? originalTitle, String? originalArtist) {
+    bool needsUpdate = false;
+    MediaItem updated = currentItem;
+    if (originalTitle != null && currentItem.title != originalTitle) {
+      updated = updated.copyWith(title: originalTitle);
+      needsUpdate = true;
+    }
+    if (originalArtist != null && currentItem.artist != originalArtist) {
+      updated = updated.copyWith(artist: originalArtist);
+      needsUpdate = true;
+    }
+    if (needsUpdate) {
+      final item = updated;
+      final itemId = currentItem.id;
+      scheduleMicrotask(() {
+        if (mediaItem.value?.id == itemId) {
+          mediaItem.add(item);
+        }
+      });
+    }
+  }
+
+  void _syncLyricsToNotification(
+    MediaItem currentItem,
+    Duration position,
+    String? originalTitle,
+    String? originalArtist,
+  ) {
+    final expectedArtist = (originalTitle != null && originalArtist != null)
+        ? "$originalTitle - $originalArtist"
+        : null;
+
+    int closestLineIndex = -1;
+    String? lyricText;
+
+    final container = GetIt.instance<ProviderContainer>();
+    final metadata = container.read(currentTrackMetadataProvider).valueOrNull;
+    final lyrics = metadata?.lyrics?.lyrics;
+    if (lyrics != null && lyrics.isNotEmpty && lyrics.first.start != null) {
+      final currentMicros = position.inMicroseconds;
+      for (int i = 0; i < lyrics.length; i++) {
+        closestLineIndex = i;
+        if (lyrics[i].startMicros > currentMicros) {
+          closestLineIndex = i - 1;
+          break;
+        }
+      }
+      closestLineIndex = closestLineIndex.clamp(-1, lyrics.length - 1);
+      if (closestLineIndex >= 0) {
+        final text = lyrics[closestLineIndex].text;
+        if (text != null && text.isNotEmpty) lyricText = text;
+      }
+    }
+
+    final artistChanged = expectedArtist != null && currentItem.artist != expectedArtist;
+    final lineChanged = _lastLyricLineIndex != closestLineIndex;
+
+    if (!artistChanged && !lineChanged) return;
+
+    if (lineChanged) _lastLyricLineIndex = closestLineIndex;
+
+    final title = lyricText ?? (originalTitle ?? currentItem.title);
+    final item = currentItem.copyWith(
+      artist: expectedArtist ?? currentItem.artist,
+      title: title,
+    );
+    final itemId = currentItem.id;
+    scheduleMicrotask(() {
+      if (mediaItem.value?.id == itemId) {
+        mediaItem.add(item);
       }
     });
   }

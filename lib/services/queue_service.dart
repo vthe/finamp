@@ -1471,13 +1471,17 @@ class QueueService {
       }
     }
 
+    final originalTitle = item.name ?? "unknown";
+    final originalArtist = item.artists?.join(", ") ?? item.albumArtist ?? "Unknown Artist";
+    final showLyricsInNotification = FinampSettingsHelper.finampSettings.showLyricsInNotification;
+
     return MediaItem(
       id: itemId?.toString() ?? uuid.v4(),
       playable:
           isItemPlayable, // this dictates whether clicking on an item will try to play it or browse it in media browsers like Android Auto
       album: item.album,
-      artist: item.artists?.join(", ") ?? item.albumArtist,
-      title: item.name ?? "unknown",
+      artist: showLyricsInNotification ? "$originalTitle - $originalArtist" : originalArtist,
+      title: originalTitle,
       extras: {
         //!!! this ID has to be consistent across the transcoding URL and the playback reporting status, otherwise the server won't show that we're transcoding
         "playSessionId": uuid.v4(),
@@ -1489,6 +1493,8 @@ class QueueService {
         "android.media.IS_EXPLICIT": item.isExplicit ? 1 : 0,
         "isOffline": FinampSettingsHelper.finampSettings.isOffline,
         "contextNormalizationGain": contextNormalizationGain,
+        "originalTitle": originalTitle,
+        "originalArtist": originalArtist,
       },
       // Jellyfin returns microseconds * 10 for some reason
       duration: item.runTimeTicksDuration(),

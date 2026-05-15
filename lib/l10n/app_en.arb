@@ -2225,6 +2225,14 @@
   "@showSeekControlsOnMediaNotificationSubtitle": {
     "description": "Subtitle for the setting that controls if the media notification has a seekable progress bar."
   },
+  "showLyricsInNotificationTitle": "Show Lyrics in Notification",
+  "@showLyricsInNotificationTitle": {
+    "description": "Title for the setting that controls if lyrics are shown in the media notification."
+  },
+  "showLyricsInNotificationSubtitle": "When enabled, the notification title will display the current lyric line. The song name and artist will be shown in the subtitle.",
+  "@showLyricsInNotificationSubtitle": {
+    "description": "Subtitle for the setting that controls if lyrics are shown in the media notification."
+  },
   "lyricsEmptyStateLoading": "Loading lyrics...",
   "@lyricsEmptyStateLoading": {
     "description": "Message shown while lyrics are being loaded"

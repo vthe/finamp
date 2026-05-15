@@ -168,6 +168,7 @@ class DefaultSettings {
   static const showShuffleButtonOnMediaNotification = true;
   static const showFavoriteButtonOnMediaNotification = true;
   static const showSeekControlsOnMediaNotification = true;
+  static const showLyricsInNotification = false;
   static const keepScreenOnOption = KeepScreenOnOption.whileLyrics;
   static const keepScreenOnWhilePluggedIn = false;
   static const hasDownloadedPlaylistInfo = false;
@@ -403,6 +404,7 @@ class FinampSettings {
     this.streamingCacheEnabled = DefaultSettings.streamingCacheEnabled,
     this.maxStreamingCacheSizeMB = DefaultSettings.maxStreamingCacheSizeMB,
     this.autoDownloadOnListen = DefaultSettings.autoDownloadOnListen,
+    this.showLyricsInNotification = DefaultSettings.showLyricsInNotification,
   });
 
   @HiveField(0, defaultValue: DefaultSettings.isOffline)
@@ -872,6 +874,9 @@ class FinampSettings {
 
   @HiveField(150, defaultValue: DefaultSettings.autoDownloadOnListen)
   bool autoDownloadOnListen;
+
+  @HiveField(151, defaultValue: DefaultSettings.showLyricsInNotification)
+  bool showLyricsInNotification;
 
   static Future<FinampSettings> create() async {
     final downloadLocation = await DownloadLocation.create(

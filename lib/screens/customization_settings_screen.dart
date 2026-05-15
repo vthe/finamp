@@ -41,6 +41,7 @@ class _CustomizationSettingsScreenState extends State<CustomizationSettingsScree
           if (!Platform.isIOS) const ShowShuffleButtonOnMediaNotificationToggle(),
           if (!Platform.isIOS) const ShowFavoriteButtonOnMediaNotificationToggle(),
           const ShowSeekControlsOnMediaNotificationToggle(),
+          const ShowLyricsInNotificationToggle(),
           const OneLineMarqueeTextSwitch(),
           const ReleaseDateFormatDropdownListTile(),
           const TileAdditionalInfoTypeTitleListTile(),
@@ -127,6 +128,23 @@ class ShowSeekControlsOnMediaNotificationToggle extends ConsumerWidget {
       value: ref.watch(finampSettingsProvider.showSeekControlsOnMediaNotification),
       onChanged: (value) {
         FinampSetters.setShowSeekControlsOnMediaNotification(value);
+        GetIt.instance<MusicPlayerBackgroundTask>().refreshPlaybackStateAndMediaNotification();
+      },
+    );
+  }
+}
+
+class ShowLyricsInNotificationToggle extends ConsumerWidget {
+  const ShowLyricsInNotificationToggle({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return SwitchListTile.adaptive(
+      title: Text(AppLocalizations.of(context)!.showLyricsInNotificationTitle),
+      subtitle: Text(AppLocalizations.of(context)!.showLyricsInNotificationSubtitle),
+      value: ref.watch(finampSettingsProvider.showLyricsInNotification),
+      onChanged: (value) {
+        FinampSetters.setShowLyricsInNotification(value);
         GetIt.instance<MusicPlayerBackgroundTask>().refreshPlaybackStateAndMediaNotification();
       },
     );
